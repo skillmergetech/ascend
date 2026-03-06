@@ -132,38 +132,6 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
     }
   }, [goals, tasks, finance, momentum, streak, xp, level, achievements, settings, hydrated])
 
-  const checkAchievements = useCallback(() => {
-    const newAchievements = [...achievements]
-    let updated = false
-
-    // First Task
-    if (!newAchievements.find(a => a.id === "first_task")?.unlockedAt && tasks.some(t => t.completed)) {
-      const idx = newAchievements.findIndex(a => a.id === "first_task")
-      newAchievements[idx].unlockedAt = new Date().toISOString()
-      updated = true
-      triggerAchievementUI(newAchievements[idx])
-    }
-
-    // Streak 7
-    if (!newAchievements.find(a => a.id === "streak_7")?.unlockedAt && streak >= 7) {
-      const idx = newAchievements.findIndex(a => a.id === "streak_7")
-      newAchievements[idx].unlockedAt = new Date().toISOString()
-      updated = true
-      triggerAchievementUI(newAchievements[idx])
-    }
-
-    // Cascade 5
-    const linkedGoalsCount = goals.filter(g => g.parentId).length
-    if (!newAchievements.find(a => a.id === "cascade_5")?.unlockedAt && linkedGoalsCount >= 5) {
-      const idx = newAchievements.findIndex(a => a.id === "cascade_5")
-      newAchievements[idx].unlockedAt = new Date().toISOString()
-      updated = true
-      triggerAchievementUI(newAchievements[idx])
-    }
-
-    if (updated) setAchievements(newAchievements)
-  }, [achievements, tasks, streak, goals])
-
   const triggerAchievementUI = (achievement: Achievement) => {
     toast({
       title: "Achievement Unlocked!",
@@ -176,6 +144,44 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
       colors: ['#8b5cf6', '#0ea5e9', '#eab308']
     })
   }
+
+  const checkAchievements = useCallback(() => {
+    const newAchievements = [...achievements]
+    let updated = false
+
+    // First Task
+    if (!newAchievements.find(a => a.id === "first_task")?.unlockedAt && tasks.some(t => t.completed)) {
+      const idx = newAchievements.findIndex(a => a.id === "first_task")
+      if (idx !== -1) {
+        newAchievements[idx].unlockedAt = new Date().toISOString()
+        updated = true
+        triggerAchievementUI(newAchievements[idx])
+      }
+    }
+
+    // Streak 7
+    if (!newAchievements.find(a => a.id === "streak_7")?.unlockedAt && streak >= 7) {
+      const idx = newAchievements.findIndex(a => a.id === "streak_7")
+      if (idx !== -1) {
+        newAchievements[idx].unlockedAt = new Date().toISOString()
+        updated = true
+        triggerAchievementUI(newAchievements[idx])
+      }
+    }
+
+    // Cascade 5
+    const linkedGoalsCount = goals.filter(g => g.parentId).length
+    if (!newAchievements.find(a => a.id === "cascade_5")?.unlockedAt && linkedGoalsCount >= 5) {
+      const idx = newAchievements.findIndex(a => a.id === "cascade_5")
+      if (idx !== -1) {
+        newAchievements[idx].unlockedAt = new Date().toISOString()
+        updated = true
+        triggerAchievementUI(newAchievements[idx])
+      }
+    }
+
+    if (updated) setAchievements(newAchievements)
+  }, [achievements, tasks, streak, goals])
 
   const addXp = (amount: number) => {
     const newXp = xp + amount
@@ -206,17 +212,16 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
       completed: false,
       progress: 0,
     }
-    setGoals([...goals, newGoal])
-    checkAchievements()
+    setGoals(prev => [...prev, newGoal])
+    setTimeout(checkAchievements, 0)
   }
 
   const updateGoal = (id: string, goalUpdate: Partial<Goal>) => {
-    setGoals(goals.map(g => g.id === id ? { ...g, ...goalUpdate } : g))
+    setGoals(prev => prev.map(g => g.id === id ? { ...g, ...goalUpdate } : g))
   }
 
   const deleteGoal = (id: string) => {
-    setGoals(goals.filter(g => g.id !== id))
-    setGoals(prev => prev.map(g => g.parentId === id ? { ...g, parentId: undefined } : g))
+    setGoals(prev => prev.filter(g => g.id !== id).map(g => g.parentId === id ? { ...g, parentId: undefined } : g))
   }
 
   const toggleGoal = (id: string) => {
@@ -224,13 +229,13 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
     if (!goal) return
 
     const isCompleting = !goal.completed
-    setGoals(goals.map(g => g.id === id ? { ...g, completed: isCompleting, progress: isCompleting ? 100 : g.progress } : g))
+    setGoals(prev => prev.map(g => g.id === id ? { ...g, completed: isCompleting, progress: isCompleting ? 100 : g.progress } : g))
     
     if (isCompleting) {
       setMomentum(prev => Math.min(100, prev + 10))
       addXp(XP_PER_GOAL)
     }
-    checkAchievements()
+    setTimeout(checkAchievements, 0)
   }
 
   const addTask = (taskData: Omit<Task, "id" | "completed">) => {
@@ -239,7 +244,7 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
       id: Math.random().toString(36).substring(2, 11),
       completed: false,
     }
-    setTasks([...tasks, newTask])
+    setTasks(prev => [...prev, newTask])
   }
 
   const toggleTask = (id: string) => {
@@ -247,19 +252,18 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
     if (!task) return
 
     const isCompleting = !task.completed
-    const updatedTasks = tasks.map(t => t.id === id ? { ...t, completed: isCompleting } : t)
-    setTasks(updatedTasks)
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: isCompleting } : t))
     
     if (isCompleting) {
       setMomentum(prev => Math.min(100, prev + 2))
       setStreak(prev => prev + 1)
       addXp(XP_PER_TASK)
     }
-    checkAchievements()
+    setTimeout(checkAchievements, 0)
   }
 
   const deleteTask = (id: string) => {
-    setTasks(tasks.filter(t => t.id !== id))
+    setTasks(prev => prev.filter(t => t.id !== id))
   }
 
   const setIncome = (income: number) => {
