@@ -4,7 +4,7 @@ import { AppShell } from "@/components/layout/Shell"
 import { QuarterlyProgress } from "@/components/dashboard/QuarterlyProgress"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useAscend } from "@/lib/store"
-import { Zap, Trophy, TrendingUp, Calendar, CheckSquare, Plus, ArrowUp, Star, ChevronRight } from "lucide-react"
+import { Zap, Trophy, TrendingUp, Calendar, CheckSquare, Plus, ArrowUp, Star, ChevronRight, Flame } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,15 +13,17 @@ import { useState } from "react"
 import { useToast } from "@/hooks/use-toast"
 
 export default function Dashboard() {
-  const { momentum, streak, tasks, goals, addTask, toggleTask } = useAscend()
+  const { momentum, streak, tasks, goals, level, xp, addTask, toggleTask } = useAscend()
   const { toast } = useToast()
   const [quickTask, setQuickTask] = useState("")
+
+  const nextLevelXp = level * 1000
+  const xpProgress = (xp / nextLevelXp) * 100
 
   const today = new Date().toISOString().split('T')[0]
   const todayTasks = tasks.filter(t => t.date === today)
   const prioritizedTasks = todayTasks.slice(0, 5)
   const completedToday = todayTasks.filter(t => t.completed).length
-  const taskProgress = todayTasks.length > 0 ? (completedToday / todayTasks.length) * 100 : 0
 
   const handleQuickAdd = () => {
     if (!quickTask.trim()) return
@@ -39,8 +41,50 @@ export default function Dashboard() {
   return (
     <AppShell>
       <div className="space-y-8 max-w-7xl mx-auto pb-12">
-        {/* Hero Section: Quarterly Vision */}
+        {/* Level and XP Header Card */}
         <section className="animate-rise">
+           <Card className="border-none bg-gradient-to-r from-primary/10 via-accent/5 to-transparent backdrop-blur-xl shadow-xl overflow-hidden relative group">
+             <div className="absolute inset-0 ascend-gradient opacity-0 group-hover:opacity-5 transition-opacity duration-700" />
+             <CardContent className="p-8 flex flex-col md:flex-row items-center gap-10">
+                <div className="relative">
+                  <div className="h-24 w-24 rounded-full border-4 border-gold shadow-gold flex items-center justify-center bg-background z-10 relative">
+                    <span className="text-4xl font-black text-foreground">{level}</span>
+                  </div>
+                  <div className="absolute -top-1 -right-1 h-8 w-8 rounded-full bg-accent flex items-center justify-center text-white shadow-lg animate-pulse">
+                    <Star className="h-4 w-4 fill-white" />
+                  </div>
+                </div>
+                <div className="flex-1 space-y-4 w-full">
+                  <div className="flex justify-between items-end">
+                    <div>
+                      <h2 className="text-2xl font-black text-foreground uppercase tracking-tight">Ascension Rank: {level}</h2>
+                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Mastering Execution</p>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-xs font-black text-primary uppercase">{xp} / {nextLevelXp} XP</span>
+                    </div>
+                  </div>
+                  <Progress value={xpProgress} className="h-3 bg-primary/10 shadow-inner" />
+                  <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-2">
+                      <Flame className="h-5 w-5 text-orange-500 fill-orange-500/20" />
+                      <span className="text-sm font-black text-foreground">{streak} Day Streak</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Zap className="h-5 w-5 text-primary fill-primary/20" />
+                      <span className="text-sm font-black text-foreground">{momentum} Momentum</span>
+                    </div>
+                  </div>
+                </div>
+                <Button asChild variant="outline" className="border-gold/30 hover:bg-gold/10 hover:border-gold font-black uppercase text-xs">
+                  <Link href="/rewards">Visit Honor Hall</Link>
+                </Button>
+             </CardContent>
+           </Card>
+        </section>
+
+        {/* Hero Section: Quarterly Vision */}
+        <section className="animate-rise" style={{ animationDelay: '0.1s' }}>
           <QuarterlyProgress />
         </section>
 
@@ -48,60 +92,6 @@ export default function Dashboard() {
           {/* Left Column: Execution & Momentum */}
           <div className="lg:col-span-8 space-y-8">
             
-            {/* Momentum & Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="border-none bg-card/40 backdrop-blur-xl shadow-2xl overflow-hidden group">
-                <div className="absolute top-0 right-0 w-32 h-32 ascend-gradient opacity-10 blur-3xl -mr-10 -mt-10 group-hover:opacity-20 transition-opacity" />
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                    <Zap className="h-4 w-4 text-primary" />
-                    Momentum Core
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-5xl font-black text-foreground">{momentum}</span>
-                    <span className="text-sm font-bold text-muted-foreground">/ 100</span>
-                  </div>
-                  <div className="mt-4 h-2 w-full bg-muted rounded-full overflow-hidden">
-                    <div 
-                      className="h-full ascend-gradient transition-all duration-1000" 
-                      style={{ width: `${momentum}%` }}
-                    />
-                  </div>
-                  <p className="mt-4 text-xs font-medium text-muted-foreground flex items-center gap-1">
-                    <TrendingUp className="h-3 w-3 text-accent" />
-                    Achieving at high velocity
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="border-none bg-card/40 backdrop-blur-xl shadow-2xl overflow-hidden group">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gold opacity-5 blur-3xl -mr-10 -mt-10" />
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                    <Trophy className="h-4 w-4 text-gold" />
-                    Consistency Streak
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-5xl font-black text-foreground">{streak}</span>
-                    <span className="text-sm font-bold text-muted-foreground">Days</span>
-                  </div>
-                  <div className="mt-4 flex gap-1.5">
-                    {Array.from({ length: 7 }).map((_, i) => (
-                      <div 
-                        key={i} 
-                        className={`h-1.5 flex-1 rounded-full ${i < (streak % 7 || (streak > 0 ? 7 : 0)) ? 'bg-gold shadow-gold' : 'bg-muted'}`} 
-                      />
-                    ))}
-                  </div>
-                  <p className="mt-4 text-xs font-medium text-muted-foreground">The chain remains unbroken</p>
-                </CardContent>
-              </Card>
-            </div>
-
             {/* Today's Prioritized Tasks */}
             <Card className="border-none bg-card/40 backdrop-blur-xl shadow-2xl">
               <CardHeader className="flex flex-row items-center justify-between">
@@ -180,7 +170,7 @@ export default function Dashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-8">
-                {goals.slice(0, 3).map((goal, idx) => (
+                {goals.slice(0, 3).map((goal) => (
                   <div key={goal.id} className="relative pl-10 group">
                     <div className="absolute left-0 top-0 h-4 w-4 rounded-full bg-background border-2 border-primary group-hover:border-accent transition-colors z-10 flex items-center justify-center">
                        <div className="h-1.5 w-1.5 rounded-full bg-primary" />
@@ -205,39 +195,28 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            {/* Achievements Area */}
+            {/* Recent Honors */}
             <Card className="border-none bg-gradient-to-br from-primary/20 to-accent/10 backdrop-blur-xl shadow-2xl border-l-4 border-gold">
               <CardHeader>
                 <CardTitle className="text-sm font-black uppercase tracking-widest text-gold flex items-center gap-2">
                   <Trophy className="h-4 w-4" />
-                  Honors List
+                  Recent Honors
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {momentum > 50 && (
-                    <div className="flex gap-3 items-start animate-rise">
-                      <div className="h-8 w-8 rounded-lg bg-gold/20 flex items-center justify-center shrink-0">
-                        <Zap className="h-4 w-4 text-gold" />
+                  {useAscend().achievements.filter(a => a.unlockedAt).slice(-3).map(achievement => (
+                     <div key={achievement.id} className="flex gap-3 items-start animate-rise">
+                      <div className="h-8 w-8 rounded-lg bg-gold/20 flex items-center justify-center shrink-0 shadow-gold">
+                        <Trophy className="h-4 w-4 text-gold" />
                       </div>
                       <div>
-                        <p className="text-xs font-bold text-foreground">Flow State Achieved</p>
-                        <p className="text-[10px] text-muted-foreground">Momentum sustained above critical threshold.</p>
+                        <p className="text-xs font-bold text-foreground">{achievement.title}</p>
+                        <p className="text-[10px] text-muted-foreground line-clamp-1">{achievement.description}</p>
                       </div>
                     </div>
-                  )}
-                  {streak > 3 && (
-                    <div className="flex gap-3 items-start animate-rise" style={{ animationDelay: '0.1s' }}>
-                      <div className="h-8 w-8 rounded-lg bg-accent/20 flex items-center justify-center shrink-0">
-                        <TrendingUp className="h-4 w-4 text-accent" />
-                      </div>
-                      <div>
-                        <p className="text-xs font-bold text-foreground">Unstoppable Discipline</p>
-                        <p className="text-[10px] text-muted-foreground">{streak} days of consistent execution.</p>
-                      </div>
-                    </div>
-                  )}
-                  {momentum <= 50 && streak <= 3 && (
+                  ))}
+                  {useAscend().achievements.filter(a => a.unlockedAt).length === 0 && (
                     <div className="text-center py-4">
                       <p className="text-[10px] font-bold text-muted-foreground italic">Execute today to unlock your first honor.</p>
                     </div>

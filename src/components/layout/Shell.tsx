@@ -1,22 +1,28 @@
 "use client"
 
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-import { Home, Target, CheckSquare, Wallet, Sparkles, LogOut, TrendingUp, Zap } from "lucide-react"
+import { Home, Target, CheckSquare, Wallet, Sparkles, LogOut, TrendingUp, Zap, Trophy, Flame, Volume2, VolumeX } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useAscend } from "@/lib/store"
+import { Progress } from "@/components/ui/progress"
+import { Button } from "@/components/ui/button"
 
 const items = [
   { title: "Dashboard", url: "/", icon: Home },
   { title: "Goal Hierarchy", url: "/goals", icon: Target },
   { title: "Daily Tasks", url: "/tasks", icon: CheckSquare },
   { title: "Finance", url: "/finance", icon: Wallet },
+  { title: "Rewards Center", url: "/rewards", icon: Trophy },
   { title: "Goal Assistant", url: "/assistant", icon: Sparkles },
 ]
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const { momentum } = useAscend()
+  const { momentum, level, xp, streak, settings, toggleMute } = useAscend()
+  
+  const nextLevelXp = level * 1000
+  const xpProgress = (xp / nextLevelXp) * 100
 
   return (
     <SidebarProvider>
@@ -31,6 +37,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           </SidebarHeader>
           <SidebarContent>
+            {/* User Level Display */}
+            <div className="px-6 py-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-full bg-gold flex items-center justify-center text-background font-black text-xs shadow-gold">
+                    {level}
+                  </div>
+                  <span className="text-xs font-black uppercase text-foreground">Level {level}</span>
+                </div>
+                <span className="text-[10px] font-bold text-muted-foreground">{xp} / {nextLevelXp} XP</span>
+              </div>
+              <Progress value={xpProgress} className="h-1.5" />
+            </div>
+
             <SidebarGroup>
               <SidebarGroupLabel className="px-6 text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-50">Operations</SidebarGroupLabel>
               <SidebarGroupContent className="px-2">
@@ -49,7 +69,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </SidebarGroupContent>
             </SidebarGroup>
           </SidebarContent>
-          <SidebarFooter className="p-4">
+          <SidebarFooter className="p-4 space-y-4">
+            <div className="flex items-center justify-between px-2">
+               <div className="flex items-center gap-2">
+                 <Flame className="h-5 w-5 text-orange-500 fill-orange-500/20" />
+                 <span className="text-sm font-black text-foreground">{streak} Day Streak</span>
+               </div>
+               <Button variant="ghost" size="icon" onClick={toggleMute} className="h-8 w-8 opacity-50 hover:opacity-100">
+                 {settings.mute ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+               </Button>
+            </div>
             <div className="rounded-2xl ascend-gradient p-4 shadow-xl shadow-primary/20">
               <p className="text-[10px] font-black text-white/70 uppercase tracking-widest mb-1">Momentum Core</p>
               <div className="flex items-center justify-between text-white">
