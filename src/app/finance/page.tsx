@@ -17,7 +17,7 @@ import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 
 export default function FinancePage() {
-  const { finance, setIncome, addExpense, deleteExpense } = useAscend()
+  const { finance, settings, setIncome, addExpense, deleteExpense } = useAscend()
   const { toast } = useToast()
   
   const [expenseAmount, setExpenseAmount] = useState("")
@@ -28,6 +28,16 @@ export default function FinancePage() {
   // Safe accessors for nested data
   const allocations = finance?.allocations || { tithe: 0, savings: 0, charity: 0, investments: 0, dailyNeeds: 0, misc: 0 }
   const expenses = finance?.expenses || []
+
+  const currencySymbol = useMemo(() => {
+    switch (settings.currency) {
+      case "EUR": return "€"
+      case "GBP": return "£"
+      case "JPY": return "¥"
+      case "NGN": return "₦"
+      default: return "$"
+    }
+  }, [settings.currency])
 
   const categories = [
     { label: "Savings", icon: PiggyBank, percent: 30, color: "#3b82f6", bg: "bg-blue-500/10", value: allocations.savings },
@@ -89,7 +99,7 @@ export default function FinancePage() {
               <CardContent className="p-4 space-y-2">
                 <Label htmlFor="income" className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Monthly Fuel (Income)</Label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-black text-lg">$</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-black text-lg">{currencySymbol}</span>
                   <Input 
                     id="income" 
                     type="number" 
@@ -196,7 +206,7 @@ export default function FinancePage() {
                         </div>
                         <div className="text-right">
                           <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">{cat.label}</span>
-                          <p className="text-xl font-black text-foreground">${limit.toLocaleString()}</p>
+                          <p className="text-xl font-black text-foreground">{currencySymbol}{limit.toLocaleString()}</p>
                         </div>
                       </div>
                       
@@ -206,7 +216,7 @@ export default function FinancePage() {
                           <span className={cn(
                             isOverLimit ? "text-destructive" : isNearingLimit ? "text-orange-500" : "text-primary"
                           )}>
-                            ${spent.toLocaleString()} ({Math.round(progress)}%)
+                            {currencySymbol}{spent.toLocaleString()} ({Math.round(progress)}%)
                           </span>
                         </div>
                         <Progress 
@@ -249,10 +259,10 @@ export default function FinancePage() {
                    ].map((proj, idx) => (
                      <div key={idx} className="p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 animate-rise" style={{ animationDelay: proj.delay }}>
                        <p className="text-[10px] font-black uppercase text-white/70 mb-1">{proj.label}</p>
-                       <h3 className="text-3xl font-black">${proj.value.toLocaleString()}</h3>
+                       <h3 className="text-3xl font-black">{currencySymbol}{proj.value.toLocaleString()}</h3>
                        <div className="mt-2 flex items-center gap-1 text-[10px] font-bold text-white/50">
                          <ArrowUpRight className="h-3 w-3" />
-                         Based on current ${((allocations.savings || 0) + (allocations.investments || 0)).toLocaleString()}/mo rate
+                         Based on current {currencySymbol}{((allocations.savings || 0) + (allocations.investments || 0)).toLocaleString()}/mo rate
                        </div>
                      </div>
                    ))}
@@ -287,7 +297,7 @@ export default function FinancePage() {
                               <span className="text-[10px] font-black uppercase text-muted-foreground">{expense.category}</span>
                             </TableCell>
                             <TableCell className="text-right font-black text-foreground">
-                              -${expense.amount.toLocaleString()}
+                              -{currencySymbol}{expense.amount.toLocaleString()}
                             </TableCell>
                             <TableCell>
                               <Button 
