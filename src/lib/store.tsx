@@ -1,3 +1,4 @@
+
 "use client"
 
 import { createContext, useContext, useEffect, useState, useCallback } from "react"
@@ -5,6 +6,7 @@ import { toast } from "@/hooks/use-toast"
 import confetti from "canvas-confetti"
 
 export type GoalType = "weekly" | "monthly" | "quarterly" | "biannual" | "yearly"
+export type PriorityType = "high" | "medium" | "low"
 
 export interface Achievement {
   id: string
@@ -28,12 +30,23 @@ export interface Goal {
   progress: number
 }
 
+export interface SubTask {
+  id: string
+  title: string
+  completed: boolean
+}
+
 export interface Task {
   id: string
   title: string
   completed: boolean
   goalId?: string
   date: string
+  priority: PriorityType
+  description?: string
+  timeEstimate?: string
+  subtasks: SubTask[]
+  timeOfDay?: "morning" | "evening" | "any"
 }
 
 export interface Expense {
@@ -74,7 +87,8 @@ interface AscendStore {
   updateGoal: (id: string, goal: Partial<Goal>) => void
   deleteGoal: (id: string) => void
   toggleGoal: (id: string) => void
-  addTask: (task: Omit<Task, "id" | "completed">) => void
+  addTask: (task: Omit<Task, "id" | "completed" | "subtasks" | "priority"> & { priority?: PriorityType, subtasks?: SubTask[] }) => void
+  updateTask: (id: string, task: Partial<Task>) => void
   toggleTask: (id: string) => void
   deleteTask: (id: string) => void
   setIncome: (income: number) => void
@@ -129,9 +143,13 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
       try {
         const parsed = JSON.parse(stored)
         setGoals(parsed.goals || [])
-        setTasks(parsed.tasks || [])
+        setTasks((parsed.tasks || []).map((t: any) => ({
+          ...t,
+          priority: t.priority || "medium",
+          subtasks: t.subtasks || [],
+          timeOfDay: t.timeOfDay || "any"
+        })))
         
-        // Ensure finance object is fully formed with all nested properties
         const loadedFinance = parsed.finance || DEFAULT_FINANCE
         setFinance({
           ...DEFAULT_FINANCE,
@@ -267,13 +285,19 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
     setTimeout(checkAchievements, 0)
   }
 
-  const addTask = (taskData: Omit<Task, "id" | "completed">) => {
+  const addTask = (taskData: Omit<Task, "id" | "completed" | "subtasks" | "priority"> & { priority?: PriorityType, subtasks?: SubTask[] }) => {
     const newTask: Task = {
       ...taskData,
+      priority: taskData.priority || "medium",
+      subtasks: taskData.subtasks || [],
       id: Math.random().toString(36).substring(2, 11),
       completed: false,
     }
     setTasks(prev => [...prev, newTask])
+  }
+
+  const updateTask = (id: string, taskUpdate: Partial<Task>) => {
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, ...taskUpdate } : t))
   }
 
   const toggleTask = (id: string) => {
@@ -287,6 +311,12 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
       setMomentum(prev => Math.min(100, prev + 2))
       setStreak(prev => prev + 1)
       addXp(XP_PER_TASK)
+      confetti({
+        particleCount: 50,
+        spread: 30,
+        origin: { y: 0.9, x: 0.9 },
+        colors: ['#0ea5e9']
+      })
     }
     setTimeout(checkAchievements, 0)
   }
@@ -335,7 +365,7 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
   return (
     <AscendContext.Provider value={{ 
       goals, tasks, finance, momentum, streak, xp, level, achievements, settings,
-      addGoal, updateGoal, deleteGoal, toggleGoal, addTask, toggleTask, deleteTask, setIncome, addExpense, deleteExpense, toggleMute
+      addGoal, updateGoal, deleteGoal, toggleGoal, addTask, updateTask, toggleTask, deleteTask, setIncome, addExpense, deleteExpense, toggleMute
     }}>
       {children}
     </AscendContext.Provider>
