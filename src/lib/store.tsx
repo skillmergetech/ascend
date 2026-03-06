@@ -11,6 +11,7 @@ export interface UserProfile {
   name: string
   avatar: string
   joinDate: string
+  onboardingCompleted: boolean
 }
 
 export interface Achievement {
@@ -113,6 +114,7 @@ interface AscendStore {
     reminderTime: string
   }
   updateUser: (user: Partial<UserProfile>) => void
+  completeOnboarding: () => void
   addGoal: (goal: Omit<Goal, "id" | "progress" | "completed">) => void
   updateGoal: (id: string, goal: Partial<Goal>) => void
   deleteGoal: (id: string) => void
@@ -148,7 +150,8 @@ const DEFAULT_FINANCE: FinanceData = {
 const INITIAL_USER: UserProfile = {
   name: "New Achiever",
   avatar: "https://picsum.photos/seed/user/200/200",
-  joinDate: new Date().toISOString().split('T')[0]
+  joinDate: new Date().toISOString().split('T')[0],
+  onboardingCompleted: false
 }
 
 const INITIAL_ACHIEVEMENTS: Achievement[] = [
@@ -185,11 +188,11 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
   const getNextLevelXp = (lvl: number) => lvl * 1000
 
   useEffect(() => {
-    const stored = localStorage.getItem("ascend_data_v4")
+    const stored = localStorage.getItem("ascend_data_v5")
     if (stored) {
       try {
         const parsed = JSON.parse(stored)
-        setUser(parsed.user || INITIAL_USER)
+        setUser({ ...INITIAL_USER, ...parsed.user })
         setGoals(parsed.goals || [])
         setTasks((parsed.tasks || []).map((t: any) => ({
           ...t,
@@ -228,7 +231,7 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (hydrated) {
-      localStorage.setItem("ascend_data_v4", JSON.stringify({ 
+      localStorage.setItem("ascend_data_v5", JSON.stringify({ 
         user, goals, tasks, finance, reviews, momentum, streak, xp, level, achievements, settings 
       }))
     }
@@ -236,7 +239,11 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
 
   const updateUser = (update: Partial<UserProfile>) => {
     setUser(prev => ({ ...prev, ...update }))
-    toast({ title: "Profile Updated", description: "Changes saved to operational records." })
+  }
+
+  const completeOnboarding = () => {
+    setUser(prev => ({ ...prev, onboardingCompleted: true }))
+    toast({ title: "Welcome, Commander", description: "Onboarding complete. Your ascent begins now." })
   }
 
   const updateSettings = (update: Partial<AscendStore["settings"]>) => {
@@ -244,7 +251,7 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
   }
 
   const resetData = () => {
-    localStorage.removeItem("ascend_data_v4")
+    localStorage.removeItem("ascend_data_v5")
     window.location.reload()
   }
 
@@ -456,7 +463,7 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
   return (
     <AscendContext.Provider value={{ 
       user, goals, tasks, finance, reviews, momentum, streak, xp, level, achievements, settings,
-      updateUser, addGoal, updateGoal, deleteGoal, toggleGoal, addTask, updateTask, toggleTask, deleteTask, setIncome, addExpense, deleteExpense, addReview,
+      updateUser, completeOnboarding, addGoal, updateGoal, deleteGoal, toggleGoal, addTask, updateTask, toggleTask, deleteTask, setIncome, addExpense, deleteExpense, addReview,
       updateSettings, toggleMute, exportData, resetData
     }}>
       {children}

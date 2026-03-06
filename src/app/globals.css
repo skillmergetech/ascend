@@ -55,7 +55,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground transition-colors duration-300;
     background-image: 
       radial-gradient(at 0% 0%, hsla(263, 70%, 50%, 0.15) 0px, transparent 50%),
       radial-gradient(at 100% 100%, hsla(200, 100%, 50%, 0.1) 0px, transparent 50%);
@@ -79,8 +79,18 @@
   100% { transform: translateY(0); opacity: 1; }
 }
 
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-5px); }
+  100% { transform: translateY(0px); }
+}
+
 .animate-rise {
   animation: rise 0.5s ease-out forwards;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
 }
 
 .ascend-gradient {
@@ -100,4 +110,14 @@
   height: 100%;
   background: linear-gradient(to top, transparent, hsl(var(--accent) / 0.5), transparent);
   transform: translateX(-50%);
+}
+
+/* Page transitions */
+main {
+  animation: page-enter 0.4s ease-out;
+}
+
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
 }
