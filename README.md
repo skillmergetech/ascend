@@ -22,8 +22,7 @@ Ascend is a high-fidelity personal development command center designed to synchr
 
 ## 📦 Deployment to GitHub
 
-Follow these steps to push your local project to a GitHub repository:
-
+### Initial Setup
 1. **Create a new repository** on [GitHub](https://github.com/new).
 2. **Initialize Git** in your project folder:
    ```bash
@@ -43,6 +42,14 @@ Follow these steps to push your local project to a GitHub repository:
    ```bash
    git push -u origin main
    ```
+
+### Incremental Updates
+When you make new changes (like adding profile uploads or new features), run:
+```bash
+git add .
+git commit -m "Description of your changes"
+git push
+```
 
 ## 📜 License
 
