@@ -1,7 +1,7 @@
 "use client"
 
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-import { Home, Target, CheckSquare, Wallet, Sparkles, LogOut, TrendingUp, Zap, Trophy, Flame, Volume2, VolumeX, BarChart3, Settings, ClipboardCheck, Menu, Command } from "lucide-react"
+import { Home, Target, CheckSquare, Wallet, Sparkles, LogOut, TrendingUp, Zap, Trophy, Flame, Volume2, VolumeX, BarChart3, Settings, ClipboardCheck, Menu, Command, Sun, Moon } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useAscend } from "@/lib/store"
@@ -12,6 +12,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { cn } from "@/lib/utils"
 import { useEffect, useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
+import { useTheme } from "next-themes"
 
 const items = [
   { title: "Dashboard", url: "/", icon: Home, shortcut: "D" },
@@ -36,13 +37,16 @@ const mobileNavItems = [
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
+  const { theme, setTheme } = useTheme()
   const { momentum, level, xp, streak, settings, toggleMute, user, completeOnboarding } = useAscend()
   const [showOnboarding, setShowOnboarding] = useState(false)
+  const [mounted, setMounted] = useState(false)
   
   const nextLevelXp = level * 1000
   const xpProgress = (xp / nextLevelXp) * 100
 
   useEffect(() => {
+    setMounted(true)
     if (user.onboardingCompleted === false) {
       const timer = setTimeout(() => setShowOnboarding(true), 1000)
       return () => clearTimeout(timer)
@@ -204,6 +208,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   <Command className="h-3 w-3 text-muted-foreground" />
                   <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Shortcuts Active</span>
                 </div>
+                
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button variant="ghost" size="icon" onClick={toggleMute} className="md:hidden">
@@ -212,9 +217,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   </TooltipTrigger>
                   <TooltipContent>Toggle Sounds</TooltipContent>
                 </Tooltip>
-                <Link href="/settings" className="h-10 w-10 md:h-11 md:w-11 rounded-full border border-border bg-card flex items-center justify-center group cursor-pointer hover:border-accent transition-colors shadow-sm">
-                  <Settings className="h-5 w-5 text-primary group-hover:text-accent transition-colors" />
-                </Link>
+
+                {mounted && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="icon" 
+                        onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                        className="h-10 w-10 md:h-11 md:w-11 rounded-full border border-border bg-card flex items-center justify-center group cursor-pointer hover:border-accent transition-colors shadow-sm"
+                      >
+                        {theme === 'dark' ? (
+                          <Sun className="h-5 w-5 text-primary group-hover:text-accent transition-colors" />
+                        ) : (
+                          <Moon className="h-5 w-5 text-primary group-hover:text-accent transition-colors" />
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Switch to {theme === 'dark' ? 'Light' : 'Dark'} Mode</TooltipContent>
+                  </Tooltip>
+                )}
               </TooltipProvider>
             </div>
           </header>
