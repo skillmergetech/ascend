@@ -7,6 +7,10 @@ export type GoalType = "weekly" | "monthly" | "quarterly" | "biannual" | "yearly
 export interface Goal {
   id: string
   title: string
+  description?: string
+  targetDate?: string
+  outcome?: string
+  icon?: string
   type: GoalType
   completed: boolean
   parentId?: string
@@ -39,6 +43,8 @@ interface AscendStore {
   momentum: number
   streak: number
   addGoal: (goal: Omit<Goal, "id" | "progress" | "completed">) => void
+  updateGoal: (id: string, goal: Partial<Goal>) => void
+  deleteGoal: (id: string) => void
   toggleGoal: (id: string) => void
   addTask: (task: Omit<Task, "id" | "completed">) => void
   toggleTask: (id: string) => void
@@ -96,9 +102,20 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
     setGoals([...goals, newGoal])
   }
 
+  const updateGoal = (id: string, goalUpdate: Partial<Goal>) => {
+    setGoals(goals.map(g => g.id === id ? { ...g, ...goalUpdate } : g))
+  }
+
+  const deleteGoal = (id: string) => {
+    setGoals(goals.filter(g => g.id !== id))
+    // Also clean up children links
+    setGoals(prev => prev.map(g => g.parentId === id ? { ...g, parentId: undefined } : g))
+  }
+
   const toggleGoal = (id: string) => {
-    setGoals(goals.map(g => g.id === id ? { ...g, completed: !g.completed } : g))
-    if (!goals.find(g => g.id === id)?.completed) {
+    setGoals(goals.map(g => g.id === id ? { ...g, completed: !g.completed, progress: !g.completed ? 100 : g.progress } : g))
+    const goal = goals.find(g => g.id === id)
+    if (goal && !goal.completed) {
       setMomentum(prev => Math.min(100, prev + 10))
     }
   }
@@ -143,7 +160,7 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
   return (
     <AscendContext.Provider value={{ 
       goals, tasks, finance, momentum, streak, 
-      addGoal, toggleGoal, addTask, toggleTask, deleteTask, setIncome 
+      addGoal, updateGoal, deleteGoal, toggleGoal, addTask, toggleTask, deleteTask, setIncome 
     }}>
       {children}
     </AscendContext.Provider>
