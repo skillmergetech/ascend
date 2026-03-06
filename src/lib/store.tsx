@@ -1,4 +1,3 @@
-
 "use client"
 
 import { createContext, useContext, useEffect, useState, useCallback } from "react"
@@ -7,6 +6,12 @@ import confetti from "canvas-confetti"
 
 export type GoalType = "weekly" | "monthly" | "quarterly" | "biannual" | "yearly"
 export type PriorityType = "high" | "medium" | "low"
+
+export interface UserProfile {
+  name: string
+  avatar: string
+  joinDate: string
+}
 
 export interface Achievement {
   id: string
@@ -72,6 +77,7 @@ export interface FinanceData {
 }
 
 interface AscendStore {
+  user: UserProfile
   goals: Goal[]
   tasks: Task[]
   finance: FinanceData
@@ -82,7 +88,11 @@ interface AscendStore {
   achievements: Achievement[]
   settings: {
     mute: boolean
+    currency: string
+    notifications: boolean
+    reminderTime: string
   }
+  updateUser: (user: Partial<UserProfile>) => void
   addGoal: (goal: Omit<Goal, "id" | "progress" | "completed">) => void
   updateGoal: (id: string, goal: Partial<Goal>) => void
   deleteGoal: (id: string) => void
@@ -94,7 +104,10 @@ interface AscendStore {
   setIncome: (income: number) => void
   addExpense: (expense: Omit<Expense, "id">) => void
   deleteExpense: (id: string) => void
+  updateSettings: (settings: Partial<AscendStore["settings"]>) => void
   toggleMute: () => void
+  exportData: () => void
+  resetData: () => void
 }
 
 const DEFAULT_FINANCE: FinanceData = {
@@ -111,6 +124,12 @@ const DEFAULT_FINANCE: FinanceData = {
   expenses: [],
 }
 
+const INITIAL_USER: UserProfile = {
+  name: "New Achiever",
+  avatar: "https://picsum.photos/seed/user/200/200",
+  joinDate: new Date().toISOString().split('T')[0]
+}
+
 const INITIAL_ACHIEVEMENTS: Achievement[] = [
   { id: "first_task", title: "Initiated", description: "Complete your first daily mission.", icon: "Zap", category: "execution" },
   { id: "streak_7", title: "Disciplined", description: "Maintain a 7-day consistency streak.", icon: "Flame", category: "execution" },
@@ -122,6 +141,7 @@ const INITIAL_ACHIEVEMENTS: Achievement[] = [
 const AscendContext = createContext<AscendStore | undefined>(undefined)
 
 export function AscendProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<UserProfile>(INITIAL_USER)
   const [goals, setGoals] = useState<Goal[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
   const [finance, setFinance] = useState<FinanceData>(DEFAULT_FINANCE)
@@ -130,7 +150,12 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
   const [xp, setXp] = useState(0)
   const [level, setLevel] = useState(1)
   const [achievements, setAchievements] = useState<Achievement[]>(INITIAL_ACHIEVEMENTS)
-  const [settings, setSettings] = useState({ mute: false })
+  const [settings, setSettings] = useState({ 
+    mute: false, 
+    currency: "USD", 
+    notifications: true, 
+    reminderTime: "08:00" 
+  })
   const [hydrated, setHydrated] = useState(false)
 
   const XP_PER_TASK = 50
@@ -138,10 +163,11 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
   const getNextLevelXp = (lvl: number) => lvl * 1000
 
   useEffect(() => {
-    const stored = localStorage.getItem("ascend_data_v2")
+    const stored = localStorage.getItem("ascend_data_v3")
     if (stored) {
       try {
         const parsed = JSON.parse(stored)
+        setUser(parsed.user || INITIAL_USER)
         setGoals(parsed.goals || [])
         setTasks((parsed.tasks || []).map((t: any) => ({
           ...t,
@@ -166,7 +192,10 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
         setXp(parsed.xp || 0)
         setLevel(parsed.level || 1)
         setAchievements(parsed.achievements || INITIAL_ACHIEVEMENTS)
-        setSettings(parsed.settings || { mute: false })
+        setSettings({
+          ...{ mute: false, currency: "USD", notifications: true, reminderTime: "08:00" },
+          ...(parsed.settings || {})
+        })
       } catch (e) {
         console.error("Failed to parse stored data", e)
       }
@@ -176,11 +205,35 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (hydrated) {
-      localStorage.setItem("ascend_data_v2", JSON.stringify({ 
-        goals, tasks, finance, momentum, streak, xp, level, achievements, settings 
+      localStorage.setItem("ascend_data_v3", JSON.stringify({ 
+        user, goals, tasks, finance, momentum, streak, xp, level, achievements, settings 
       }))
     }
-  }, [goals, tasks, finance, momentum, streak, xp, level, achievements, settings, hydrated])
+  }, [user, goals, tasks, finance, momentum, streak, xp, level, achievements, settings, hydrated])
+
+  const updateUser = (update: Partial<UserProfile>) => {
+    setUser(prev => ({ ...prev, ...update }))
+    toast({ title: "Profile Updated", description: "Changes saved to operational records." })
+  }
+
+  const updateSettings = (update: Partial<AscendStore["settings"]>) => {
+    setSettings(prev => ({ ...prev, ...update }))
+  }
+
+  const resetData = () => {
+    localStorage.removeItem("ascend_data_v3")
+    window.location.reload()
+  }
+
+  const exportData = () => {
+    const data = { user, goals, tasks, finance, momentum, streak, xp, level, achievements, settings }
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = url
+    link.download = `ascend-backup-${new Date().toISOString().split('T')[0]}.json`
+    link.click()
+  }
 
   const triggerAchievementUI = (achievement: Achievement) => {
     toast({
@@ -364,8 +417,9 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AscendContext.Provider value={{ 
-      goals, tasks, finance, momentum, streak, xp, level, achievements, settings,
-      addGoal, updateGoal, deleteGoal, toggleGoal, addTask, updateTask, toggleTask, deleteTask, setIncome, addExpense, deleteExpense, toggleMute
+      user, goals, tasks, finance, momentum, streak, xp, level, achievements, settings,
+      updateUser, addGoal, updateGoal, deleteGoal, toggleGoal, addTask, updateTask, toggleTask, deleteTask, setIncome, addExpense, deleteExpense, 
+      updateSettings, toggleMute, exportData, resetData
     }}>
       {children}
     </AscendContext.Provider>
