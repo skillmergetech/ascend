@@ -1,3 +1,2 @@
-// This file is deprecated in favor of store.tsx to resolve JSX parsing conflicts.
-// The main application state is now managed in src/lib/store.tsx.
+// This file is intentionally left empty to prevent resolution conflicts with store.tsx
 export {};

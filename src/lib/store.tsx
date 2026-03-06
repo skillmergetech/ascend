@@ -190,7 +190,7 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
   const getNextLevelXp = (lvl: number) => lvl * 1000
 
   useEffect(() => {
-    const stored = localStorage.getItem("ascend_data_v5")
+    const stored = localStorage.getItem("ascend_data_v6")
     if (stored) {
       try {
         const parsed = JSON.parse(stored)
@@ -233,7 +233,7 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (hydrated) {
-      localStorage.setItem("ascend_data_v5", JSON.stringify({ 
+      localStorage.setItem("ascend_data_v6", JSON.stringify({ 
         user, goals, tasks, finance, reviews, momentum, streak, xp, level, achievements, settings 
       }))
     }
@@ -253,7 +253,7 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
   }
 
   const resetData = () => {
-    localStorage.removeItem("ascend_data_v5")
+    localStorage.removeItem("ascend_data_v6")
     window.location.reload()
   }
 
@@ -461,6 +461,8 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
   const toggleMute = () => {
     setSettings(prev => ({ ...prev, mute: !prev.mute }))
   }
+
+  if (!hydrated) return null;
 
   return (
     <AscendContext.Provider value={{ 
