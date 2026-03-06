@@ -1,0 +1,344 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a registered user in the Ascend application. This entity stores core user account information.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the User entity."
+        },
+        "email": {
+          "type": "string",
+          "description": "The unique email address of the user, used for login and communication.",
+          "format": "email"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "The date and time when the user account was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "The date and time when the user account was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "UserProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserProfile",
+      "type": "object",
+      "description": "Stores additional profile information and gamification statistics for a user, separate from core authentication details.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UserProfile entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User entity this profile belongs to. (Relationship: User 1:1 UserProfile)"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "An optional display name chosen by the user."
+        },
+        "momentumScore": {
+          "type": "number",
+          "description": "A calculated score representing the user's ongoing progress and motivation."
+        },
+        "achievementStreak": {
+          "type": "number",
+          "description": "The number of consecutive days or periods a user has achieved a goal or completed tasks."
+        },
+        "lastLoginDate": {
+          "type": "string",
+          "description": "The date and time of the user's last login.",
+          "format": "date-time"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "The date and time when the user profile was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "The date and time when the user profile was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "momentumScore",
+        "achievementStreak",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Goal": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Goal",
+      "type": "object",
+      "description": "Represents a goal at any level (Weekly, Monthly, Quarterly, Biannual, Yearly) within the user's goal hierarchy.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Goal entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User entity who owns this goal. (Relationship: User 1:N Goal)"
+        },
+        "title": {
+          "type": "string",
+          "description": "A concise title for the goal."
+        },
+        "description": {
+          "type": "string",
+          "description": "A detailed description of the goal."
+        },
+        "type": {
+          "type": "string",
+          "description": "The type or level of the goal within the hierarchy.",
+          "format": "enum",
+          "items": {
+            "type": "string"
+          }
+        },
+        "startDate": {
+          "type": "string",
+          "description": "The date when the goal is scheduled to start.",
+          "format": "date"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "The date when the goal is scheduled to end.",
+          "format": "date"
+        },
+        "isCompleted": {
+          "type": "boolean",
+          "description": "Indicates whether the goal has been completed."
+        },
+        "completionDate": {
+          "type": "string",
+          "description": "The date and time when the goal was marked as completed.",
+          "format": "date-time"
+        },
+        "parentGoalId": {
+          "type": "string",
+          "description": "Reference to a higher-level goal that this goal contributes to. (Relationship: Goal 1:N Goal - self-referencing)"
+        },
+        "progress": {
+          "type": "number",
+          "description": "A percentage (0-100) indicating the current progress towards the goal."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "The date and time when the goal was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "The date and time when the goal was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "title",
+        "type",
+        "startDate",
+        "endDate",
+        "isCompleted",
+        "progress",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Task": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Task",
+      "type": "object",
+      "description": "Represents a daily task that a user needs to complete, optionally linked to a weekly goal.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Task entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User entity who owns this task. (Relationship: User 1:N Task)"
+        },
+        "title": {
+          "type": "string",
+          "description": "A concise title for the task."
+        },
+        "description": {
+          "type": "string",
+          "description": "A detailed description of the task."
+        },
+        "dueDate": {
+          "type": "string",
+          "description": "The date when the task is due.",
+          "format": "date"
+        },
+        "isCompleted": {
+          "type": "boolean",
+          "description": "Indicates whether the task has been completed."
+        },
+        "completionDate": {
+          "type": "string",
+          "description": "The date and time when the task was marked as completed.",
+          "format": "date-time"
+        },
+        "weeklyGoalId": {
+          "type": "string",
+          "description": "Reference to the Weekly Goal this task contributes to. (Relationship: Goal 1:N Task)"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "The date and time when the task was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "The date and time when the task was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "title",
+        "dueDate",
+        "isCompleted",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "FinancialConfiguration": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "FinancialConfiguration",
+      "type": "object",
+      "description": "Stores the user's monthly income, which is used to calculate the budget breakdown into predefined categories.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the FinancialConfiguration entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User entity this financial configuration belongs to. (Relationship: User 1:1 FinancialConfiguration)"
+        },
+        "monthlyIncome": {
+          "type": "number",
+          "description": "The total monthly income entered by the user."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "The date and time when the financial configuration was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "The date and time when the financial configuration was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "monthlyIncome",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "UserProfile",
+          "schema": {
+            "$ref": "#/backend/entities/UserProfile"
+          },
+          "description": "Stores the profile information, gamification statistics, and last login for a specific user. The document ID corresponds to the user's Firebase Authentication UID. The 'id' and 'userId' fields within the schema are implicitly derived from the path and the document ID. This document serves as the main user profile record."
+        }
+      },
+      {
+        "path": "/users/{userId}/goals/{goalId}",
+        "definition": {
+          "entityName": "Goal",
+          "schema": {
+            "$ref": "#/backend/entities/Goal"
+          },
+          "description": "Stores individual goals (Weekly, Monthly, Quarterly, Biannual, Yearly) created and owned by a specific user. The 'userId' field within the document is explicitly denormalized from the path for enhanced data integrity, supporting authorization independence for easy rules debugging.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who owns the goal. Matches 'request.auth.uid'."
+            },
+            {
+              "name": "goalId",
+              "description": "The unique identifier for the specific goal."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/tasks/{taskId}",
+        "definition": {
+          "entityName": "Task",
+          "schema": {
+            "$ref": "#/backend/entities/Task"
+          },
+          "description": "Stores daily tasks created and owned by a specific user. Tasks can be linked to a weekly goal via 'weeklyGoalId', but ownership and authorization are strictly path-based. The 'userId' field within the document is explicitly denormalized from the path for enhanced data integrity, supporting authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who owns the task. Matches 'request.auth.uid'."
+            },
+            {
+              "name": "taskId",
+              "description": "The unique identifier for the specific task."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/financialConfiguration/current",
+        "definition": {
+          "entityName": "FinancialConfiguration",
+          "schema": {
+            "$ref": "#/backend/entities/FinancialConfiguration"
+          },
+          "description": "Stores the single financial configuration (e.g., monthly income) for a specific user. This is a 1:1 relationship represented by a fixed document ID 'current'. The 'userId' field within the document is explicitly denormalized from the path for enhanced data integrity, supporting authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who owns this financial configuration. Matches 'request.auth.uid'."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The recommended Firestore data structure prioritizes **Authorization Independence** and **Clarity of Intent** by utilizing a path-based ownership model. All user-specific data is nested directly under `/users/{userId}`, where `{userId}` corresponds to `request.auth.uid`. This design completely eliminates the need for `get()` calls in security rules to ascertain ownership, thereby making rules robust, atomic, and easy to debug. Each document explicitly contains fields like `userId` (where applicable) and `createdAt`/`updatedAt` to reinforce ownership and maintain data integrity, even though the primary authorization is derived from the path.\n\n**QAPs (Queries as Authorization Primitives)** are fully supported because each collection (`/users/{userId}`, `/users/{userId}/goals`, `/users/{userId}/tasks`, `/users/{userId}/financialConfiguration/current`) represents a homogeneous security posture: only the owner (`request.auth.uid`) can access documents within their respective path. This allows for efficient and secure `list` operations without requiring client-side filtering or complex rule logic that would act as a filter. For example, a user can query all their goals directly from `/users/{request.auth.uid}/goals` and the rules will naturally restrict access to only their owned documents. Structural Segregation is applied by keeping distinct entity types in their own subcollections, even if they share the same security requirements (e.g., goals, tasks, financial configuration are all owned by the user but are in separate, clearly named subcollections).\n\nSpecifically:\n*   The `UserProfile` entity is stored directly at `/users/{userId}`, with the document ID being the `userId` itself, establishing a clear 1:1 relationship with the authenticated user.\n*   `Goal` entities are stored in a subcollection `/users/{userId}/goals/{goalId}`, explicitly linking each goal to its owner via the path.\n*   `Task` entities are stored in `/users/{userId}/tasks/{taskId}`. While tasks can be linked to weekly goals via `weeklyGoalId`, their primary authorization is based on user ownership in the path, ensuring authorization independence. The `weeklyGoalId` is a data reference, not an authorization dependency.\n*   `FinancialConfiguration` is a 1:1 entity stored as a singleton document at `/users/{userId}/financialConfiguration/current`, explicitly owned by the user."
+  }
+}
