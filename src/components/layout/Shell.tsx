@@ -1,13 +1,14 @@
 "use client"
 
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-import { Home, Target, CheckSquare, Wallet, Sparkles, LogOut, TrendingUp, Zap, Trophy, Flame, Volume2, VolumeX, BarChart3, Settings, ClipboardCheck } from "lucide-react"
+import { Home, Target, CheckSquare, Wallet, Sparkles, LogOut, TrendingUp, Zap, Trophy, Flame, Volume2, VolumeX, BarChart3, Settings, ClipboardCheck, Menu } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useAscend } from "@/lib/store"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { cn } from "@/lib/utils"
 
 const items = [
   { title: "Dashboard", url: "/", icon: Home },
@@ -21,6 +22,14 @@ const items = [
   { title: "Settings", url: "/settings", icon: Settings },
 ]
 
+const mobileNavItems = [
+  { title: "Home", url: "/", icon: Home },
+  { title: "Goals", url: "/goals", icon: Target },
+  { title: "Tasks", url: "/tasks", icon: CheckSquare },
+  { title: "Finance", url: "/finance", icon: Wallet },
+  { title: "Review", url: "/review", icon: ClipboardCheck },
+]
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const { momentum, level, xp, streak, settings, toggleMute, user } = useAscend()
@@ -30,8 +39,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-background font-body">
-        <Sidebar className="border-r border-border/50 bg-card/50 backdrop-blur-3xl">
+      <div className="flex min-h-screen w-full bg-background font-body pb-20 md:pb-0">
+        <Sidebar className="border-r border-border/50 bg-card/50 backdrop-blur-3xl hidden md:flex">
           <SidebarHeader className="px-6 py-8">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl ascend-gradient text-white shadow-lg shadow-primary/20">
@@ -76,8 +85,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton asChild isActive={pathname === item.url} className="px-4 py-6 rounded-xl transition-all duration-200 hover:bg-muted/30 data-[active=true]:bg-primary/10">
                         <Link href={item.url} className="flex items-center gap-4">
-                          <item.icon className={`h-5 w-5 ${pathname === item.url ? "text-accent" : "text-muted-foreground"}`} />
-                          <span className={`text-sm font-bold uppercase tracking-tight ${pathname === item.url ? "text-foreground" : "text-muted-foreground"}`}>{item.title}</span>
+                          <item.icon className={cn("h-5 w-5", pathname === item.url ? "text-accent" : "text-muted-foreground")} />
+                          <span className={cn("text-sm font-bold uppercase tracking-tight", pathname === item.url ? "text-foreground" : "text-muted-foreground")}>{item.title}</span>
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -105,29 +114,55 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           </SidebarFooter>
         </Sidebar>
-        <main className="flex-1 overflow-y-auto px-4 md:px-10 py-8 scroll-smooth">
-          <header className="mb-12 flex items-center justify-between">
+
+        {/* Mobile Bottom Navigation */}
+        <nav className="fixed bottom-0 left-0 right-0 h-20 bg-card/80 backdrop-blur-2xl border-t border-border/50 flex items-center justify-around px-2 z-50 md:hidden">
+          {mobileNavItems.map((item) => (
+            <Link 
+              key={item.title} 
+              href={item.url} 
+              className={cn(
+                "flex flex-col items-center gap-1 p-2 rounded-xl transition-all min-w-[64px] min-h-[64px] justify-center",
+                pathname === item.url ? "text-primary scale-110" : "text-muted-foreground"
+              )}
+            >
+              <item.icon className="h-6 w-6" />
+              <span className="text-[10px] font-black uppercase tracking-tighter">{item.title}</span>
+            </Link>
+          ))}
+          <SidebarTrigger className="flex flex-col items-center gap-1 p-2 min-w-[64px] min-h-[64px] justify-center text-muted-foreground">
+            <Menu className="h-6 w-6" />
+            <span className="text-[10px] font-black uppercase tracking-tighter">More</span>
+          </SidebarTrigger>
+        </nav>
+
+        <main className="flex-1 overflow-y-auto px-4 md:px-10 py-6 md:py-8 scroll-smooth">
+          <header className="mb-8 md:mb-12 flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <SidebarTrigger className="md:hidden" />
+              <div className="md:hidden flex h-10 w-10 items-center justify-center rounded-xl ascend-gradient text-white shadow-lg">
+                <TrendingUp size={20} />
+              </div>
               <div>
-                <h1 className="text-3xl font-black text-foreground font-headline flex items-center gap-2">
-                  Unit: {user.name.split(' ')[0]}
+                <h1 className="text-2xl md:text-3xl font-black text-foreground font-headline flex items-center gap-2">
+                  {user.name.split(' ')[0]}
                   <div className="h-2 w-2 rounded-full bg-accent animate-pulse" />
                 </h1>
-                <p className="text-muted-foreground text-xs font-bold uppercase tracking-[0.2em]">Operational Status: Optimal</p>
+                <p className="text-muted-foreground text-[10px] md:text-xs font-bold uppercase tracking-[0.2em]">Operational Status: Optimal</p>
               </div>
             </div>
-            <div className="hidden md:flex items-center gap-4">
-              <div className="text-right">
+            <div className="flex items-center gap-4">
+              <div className="hidden md:block text-right">
                 <p className="text-[10px] font-black text-muted-foreground uppercase">Current Cycle</p>
                 <p className="text-sm font-bold">Q1 / 2024</p>
               </div>
-              <Link href="/settings" className="h-10 w-10 rounded-full border border-border bg-card flex items-center justify-center group cursor-pointer hover:border-accent transition-colors">
+              <Link href="/settings" className="h-10 w-10 md:h-11 md:w-11 rounded-full border border-border bg-card flex items-center justify-center group cursor-pointer hover:border-accent transition-colors">
                 <Settings className="h-5 w-5 text-primary group-hover:text-accent transition-colors" />
               </Link>
             </div>
           </header>
-          {children}
+          <div className="max-w-7xl mx-auto">
+            {children}
+          </div>
         </main>
       </div>
     </SidebarProvider>

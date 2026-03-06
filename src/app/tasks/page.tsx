@@ -1,4 +1,3 @@
-
 "use client"
 
 import { AppShell } from "@/components/layout/Shell"
@@ -93,40 +92,40 @@ export default function TasksPage() {
 
   return (
     <AppShell>
-      <div className="max-w-5xl mx-auto space-y-10 pb-20">
+      <div className="max-w-5xl mx-auto space-y-8 md:space-y-10 pb-20">
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="space-y-2">
-            <h1 className="text-4xl font-black font-headline italic uppercase tracking-tighter flex items-center gap-3">
+            <h1 className="text-3xl md:text-4xl font-black font-headline italic uppercase tracking-tighter flex items-center gap-3">
               Daily Execution
-              <Zap className="h-8 w-8 text-primary fill-primary/20" />
+              <Zap className="h-6 w-6 md:h-8 md:w-8 text-primary fill-primary/20" />
             </h1>
-            <p className="text-muted-foreground font-medium">Precision tactics for the 24-hour cycle.</p>
+            <p className="text-muted-foreground font-medium text-sm md:text-base">Precision tactics for the 24-hour cycle.</p>
           </div>
 
-          <div className="flex bg-muted/50 p-1 rounded-xl">
+          <div className="flex bg-muted/50 p-1 rounded-xl w-full md:w-auto">
              <Button 
                variant={viewMode === "morning" ? "secondary" : "ghost"} 
                size="sm" 
-               className="rounded-lg gap-2"
+               className="rounded-lg gap-1 md:gap-2 flex-1 md:flex-none h-10 md:h-9"
                onClick={() => setViewMode("morning")}
              >
-               <Sun className="h-4 w-4" /> Morning
+               <Sun className="h-4 w-4" /> <span className="text-xs">Morning</span>
              </Button>
              <Button 
                variant={viewMode === "evening" ? "secondary" : "ghost"} 
                size="sm" 
-               className="rounded-lg gap-2"
+               className="rounded-lg gap-1 md:gap-2 flex-1 md:flex-none h-10 md:h-9"
                onClick={() => setViewMode("evening")}
              >
-               <Moon className="h-4 w-4" /> Evening
+               <Moon className="h-4 w-4" /> <span className="text-xs">Evening</span>
              </Button>
              <Button 
                variant={viewMode === "all" ? "secondary" : "ghost"} 
                size="sm" 
-               className="rounded-lg gap-2"
+               className="rounded-lg gap-1 md:gap-2 flex-1 md:flex-none h-10 md:h-9"
                onClick={() => setViewMode("all")}
              >
-               <LayoutGrid className="h-4 w-4" /> All Day
+               <LayoutGrid className="h-4 w-4" /> <span className="text-xs">All Day</span>
              </Button>
           </div>
         </header>
@@ -137,23 +136,23 @@ export default function TasksPage() {
             <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
               <TrendingUp size={160} />
             </div>
-            <CardContent className="p-8">
-              <div className="flex justify-between items-end mb-6">
+            <CardContent className="p-6 md:p-8">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-6 gap-4 sm:gap-0">
                 <div>
-                  <h3 className="text-xs font-black uppercase tracking-widest text-primary mb-1">Execution Velocity</h3>
+                  <h3 className="text-[10px] md:text-xs font-black uppercase tracking-widest text-primary mb-1">Execution Velocity</h3>
                   <div className="flex items-end gap-2">
-                    <span className="text-5xl font-black">{Math.round(completionRate)}%</span>
-                    <span className="text-sm font-bold text-muted-foreground mb-2 uppercase">Completion</span>
+                    <span className="text-4xl md:text-5xl font-black">{Math.round(completionRate)}%</span>
+                    <span className="text-[10px] md:text-sm font-bold text-muted-foreground mb-1 md:mb-2 uppercase">Completion</span>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-3xl font-black">{completedCount} / {totalCount}</p>
-                  <p className="text-[10px] font-black uppercase text-muted-foreground">Missions Accomplished</p>
+                <div className="sm:text-right">
+                  <p className="text-2xl md:text-3xl font-black">{completedCount} / {totalCount}</p>
+                  <p className="text-[9px] md:text-[10px] font-black uppercase text-muted-foreground">Missions Accomplished</p>
                 </div>
               </div>
               <div className="space-y-3">
-                <Progress value={completionRate} className="h-3 ascend-gradient" />
-                <div className="flex justify-between text-[10px] font-bold text-muted-foreground uppercase">
+                <Progress value={completionRate} className="h-2.5 md:h-3 ascend-gradient" />
+                <div className="flex justify-between text-[9px] md:text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                   <span>Objective Initiation</span>
                   <span>Target Achievement</span>
                 </div>
@@ -161,18 +160,18 @@ export default function TasksPage() {
             </CardContent>
           </Card>
 
-          <Card className="md:col-span-4 border-none bg-primary/10 shadow-xl flex flex-col justify-center p-8">
+          <Card className="md:col-span-4 border-none bg-primary/10 shadow-xl flex flex-col justify-center p-6 md:p-8">
              <div className="space-y-4">
-                <div className="h-12 w-12 rounded-2xl bg-primary/20 flex items-center justify-center text-primary">
-                  <Zap className="h-6 w-6" />
+                <div className="h-10 w-10 md:h-12 md:w-12 rounded-xl bg-primary/20 flex items-center justify-center text-primary">
+                  <Zap className="h-5 w-5 md:h-6 md:w-6" />
                 </div>
                 <div>
-                  <h4 className="text-lg font-bold">Tactical Focus</h4>
-                  <p className="text-sm text-muted-foreground">Your {viewMode} cycle is currently {completionRate >= 100 ? "Complete" : "Active"}.</p>
+                  <h4 className="text-base md:text-lg font-bold">Tactical Focus</h4>
+                  <p className="text-xs md:text-sm text-muted-foreground">Your {viewMode} cycle is currently {completionRate >= 100 ? "Complete" : "Active"}.</p>
                 </div>
                 <div className="pt-2">
-                  <Button variant="link" className="p-0 h-auto text-accent font-black uppercase text-[10px] gap-1 hover:gap-2 transition-all">
-                    View Productivity Trends <ChevronRight className="h-3 w-3" />
+                  <Button variant="link" className="p-0 h-auto text-accent font-black uppercase text-[9px] md:text-[10px] gap-1 hover:gap-2 transition-all">
+                    Productivity Trends <ChevronRight className="h-3 w-3" />
                   </Button>
                 </div>
              </div>
@@ -184,16 +183,16 @@ export default function TasksPage() {
           <CardContent className="p-4 flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
               <Input 
-                placeholder="Initialize new objective..." 
+                placeholder="New objective..." 
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleAddTask()}
-                className="pl-10 h-12 bg-muted/30 border-none font-bold placeholder:font-medium placeholder:text-muted-foreground"
+                className="pl-10 h-11 md:h-12 bg-muted/30 border-none font-bold placeholder:font-medium placeholder:text-muted-foreground"
               />
               <LayoutGrid className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             </div>
             <Select value={selectedGoal} onValueChange={setSelectedGoal}>
-              <SelectTrigger className="w-full sm:w-64 h-12 bg-muted/30 border-none">
+              <SelectTrigger className="w-full sm:w-64 h-11 md:h-12 bg-muted/30 border-none">
                 <SelectValue placeholder="Strategic Link" />
               </SelectTrigger>
               <SelectContent>
@@ -201,7 +200,7 @@ export default function TasksPage() {
                 {weeklyGoals.map(g => <SelectItem key={g.id} value={g.id}>{g.title}</SelectItem>)}
               </SelectContent>
             </Select>
-            <Button onClick={handleAddTask} className="h-12 px-8 bg-primary hover:bg-primary/90 rounded-xl font-black uppercase text-xs">
+            <Button onClick={handleAddTask} className="h-11 md:h-12 px-8 bg-primary hover:bg-primary/90 rounded-xl font-black uppercase text-[10px] md:text-xs">
               Deploy
             </Button>
           </CardContent>
@@ -210,19 +209,19 @@ export default function TasksPage() {
         {/* Task List Toggles & Grouping */}
         <div className="space-y-6">
           <Tabs defaultValue="priority" className="w-full">
-            <div className="flex items-center justify-between mb-4">
-               <h2 className="text-xl font-black flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
+               <h2 className="text-lg md:text-xl font-black flex items-center gap-2">
                  <ListChecks className="h-5 w-5 text-accent" />
                  Missions Deployment
                </h2>
-               <TabsList className="bg-muted/50 p-1">
-                 <TabsTrigger value="priority" className="text-[10px] font-bold uppercase">Priority</TabsTrigger>
-                 <TabsTrigger value="goal" className="text-[10px] font-bold uppercase">Goal Link</TabsTrigger>
-                 <TabsTrigger value="time" className="text-[10px] font-bold uppercase">Timeline</TabsTrigger>
+               <TabsList className="bg-muted/50 p-1 w-full sm:w-auto">
+                 <TabsTrigger value="priority" className="flex-1 sm:flex-none text-[9px] md:text-[10px] font-bold uppercase">Priority</TabsTrigger>
+                 <TabsTrigger value="goal" className="flex-1 sm:flex-none text-[9px] md:text-[10px] font-bold uppercase">Goal Link</TabsTrigger>
+                 <TabsTrigger value="time" className="flex-1 sm:flex-none text-[9px] md:text-[10px] font-bold uppercase">Timeline</TabsTrigger>
                </TabsList>
             </div>
 
-            <TabsContent value="priority" className="space-y-8 mt-0">
+            <TabsContent value="priority" className="space-y-6 md:space-y-8 mt-0">
                {(["high", "medium", "low"] as PriorityType[]).map(prio => {
                  const prioTasks = filteredTasks.filter(t => t.priority === prio)
                  if (prioTasks.length === 0 && viewMode !== "all") return null
@@ -230,14 +229,14 @@ export default function TasksPage() {
                    <div key={prio} className="space-y-3">
                      <div className="flex items-center gap-3 px-2">
                        <div className={cn("h-2 w-2 rounded-full", prio === "high" ? "bg-red-500" : prio === "medium" ? "bg-orange-500" : "bg-blue-500")} />
-                       <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground">{prio} Priority</h3>
+                       <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">{prio} Priority</h3>
                      </div>
-                     <div className="grid grid-cols-1 gap-3">
+                     <div className="grid grid-cols-1 gap-2.5">
                         {prioTasks.map(task => (
                           <TaskItem key={task.id} task={task} />
                         ))}
                         {prioTasks.length === 0 && (
-                          <p className="text-xs italic text-muted-foreground/50 px-4">No {prio} priority missions active.</p>
+                          <p className="text-xs italic text-muted-foreground/50 px-4 py-2">No active missions in this tier.</p>
                         )}
                      </div>
                    </div>
@@ -246,8 +245,7 @@ export default function TasksPage() {
             </TabsContent>
 
             <TabsContent value="goal" className="space-y-6">
-              {/* Logic for goal grouping could go here */}
-              <div className="grid grid-cols-1 gap-3">
+              <div className="grid grid-cols-1 gap-2.5">
                 {filteredTasks.map(task => (
                   <TaskItem key={task.id} task={task} />
                 ))}
@@ -259,25 +257,25 @@ export default function TasksPage() {
 
       {/* Task Details Modal */}
       <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-        <DialogContent className="bg-card/95 backdrop-blur-2xl border-none shadow-2xl max-w-2xl">
+        <DialogContent className="bg-card/95 backdrop-blur-2xl border-none shadow-2xl max-w-2xl max-h-[90vh] overflow-y-auto">
           {editingTask && (
             <>
               <DialogHeader>
                 <div className="flex items-center gap-3 mb-2">
                   <PriorityBadge priority={editingTask.priority} />
-                  <span className="text-xs font-bold text-muted-foreground uppercase">{editingTask.timeOfDay} focus</span>
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{editingTask.timeOfDay} focus</span>
                 </div>
-                <DialogTitle className="text-2xl font-black">{editingTask.title}</DialogTitle>
-                <DialogDescription>Mission details and operational sub-steps.</DialogDescription>
+                <DialogTitle className="text-xl md:text-2xl font-black">{editingTask.title}</DialogTitle>
+                <DialogDescription className="text-xs md:text-sm">Mission details and operational sub-steps.</DialogDescription>
               </DialogHeader>
               
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-8 py-6">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 py-4 md:py-6">
                 <div className="md:col-span-7 space-y-6">
                   <div className="space-y-2">
-                    <Label className="text-xs font-black uppercase text-muted-foreground">Strategic Narrative</Label>
+                    <Label className="text-[10px] md:text-xs font-black uppercase text-muted-foreground">Strategic Narrative</Label>
                     <Textarea 
                       placeholder="Operational details..." 
-                      className="min-h-[120px]"
+                      className="min-h-[100px] md:min-h-[120px] bg-muted/20 border-none"
                       value={editingTask.description} 
                       onChange={(e) => updateTask(editingTask.id, { description: e.target.value })}
                     />
@@ -285,25 +283,26 @@ export default function TasksPage() {
                   
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <Label className="text-xs font-black uppercase text-muted-foreground">Sub-Objectives</Label>
-                      <span className="text-[10px] font-bold text-accent">
+                      <Label className="text-[10px] md:text-xs font-black uppercase text-muted-foreground">Sub-Objectives</Label>
+                      <span className="text-[9px] md:text-[10px] font-bold text-accent">
                         {editingTask.subtasks.filter(s => s.completed).length}/{editingTask.subtasks.length} Completed
                       </span>
                     </div>
                     <div className="space-y-2">
                       {editingTask.subtasks.map(sub => (
-                        <div key={sub.id} className="flex items-center gap-3 p-2 rounded-lg bg-muted/20">
+                        <div key={sub.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-muted/20">
                           <Checkbox 
                             checked={sub.completed} 
                             onCheckedChange={(v) => handleUpdateSubtask(editingTask.id, sub.id, !!v)} 
+                            className="h-5 w-5"
                           />
-                          <span className={cn("text-sm font-medium", sub.completed && "line-through opacity-50")}>{sub.title}</span>
+                          <span className={cn("text-xs md:text-sm font-medium", sub.completed && "line-through opacity-50")}>{sub.title}</span>
                         </div>
                       ))}
                       <div className="flex gap-2 mt-4">
                         <Input 
                           placeholder="Add sub-task..." 
-                          className="h-9 bg-muted/30 border-none"
+                          className="h-10 bg-muted/30 border-none text-sm"
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                               handleAddSubtask(editingTask.id, e.currentTarget.value)
@@ -316,11 +315,11 @@ export default function TasksPage() {
                   </div>
                 </div>
 
-                <div className="md:col-span-5 space-y-6 border-l border-border/50 pl-6">
+                <div className="md:col-span-5 space-y-6 md:border-l md:border-border/50 md:pl-6">
                    <div className="space-y-2">
-                     <Label className="text-xs font-black uppercase text-muted-foreground">Strategic Link</Label>
+                     <Label className="text-[10px] md:text-xs font-black uppercase text-muted-foreground">Strategic Link</Label>
                      <Select value={editingTask.goalId || "none"} onValueChange={(v) => updateTask(editingTask.id, { goalId: v === "none" ? undefined : v })}>
-                       <SelectTrigger className="w-full bg-muted/30 border-none">
+                       <SelectTrigger className="w-full bg-muted/30 border-none h-11">
                          <SelectValue />
                        </SelectTrigger>
                        <SelectContent>
@@ -331,9 +330,9 @@ export default function TasksPage() {
                    </div>
 
                    <div className="space-y-2">
-                     <Label className="text-xs font-black uppercase text-muted-foreground">Priority Tier</Label>
+                     <Label className="text-[10px] md:text-xs font-black uppercase text-muted-foreground">Priority Tier</Label>
                      <Select value={editingTask.priority} onValueChange={(v) => updateTask(editingTask.id, { priority: v as PriorityType })}>
-                       <SelectTrigger className="w-full bg-muted/30 border-none">
+                       <SelectTrigger className="w-full bg-muted/30 border-none h-11">
                          <SelectValue />
                        </SelectTrigger>
                        <SelectContent>
@@ -345,14 +344,14 @@ export default function TasksPage() {
                    </div>
 
                    <div className="space-y-2">
-                     <Label className="text-xs font-black uppercase text-muted-foreground">Time Estimate</Label>
+                     <Label className="text-[10px] md:text-xs font-black uppercase text-muted-foreground">Time Estimate</Label>
                      <div className="relative">
-                       <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                       <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                        <Input 
                          value={editingTask.timeEstimate || ""} 
                          onChange={(e) => updateTask(editingTask.id, { timeEstimate: e.target.value })}
                          placeholder="e.g. 45m" 
-                         className="pl-9 h-10 bg-muted/30 border-none" 
+                         className="pl-9 h-11 bg-muted/30 border-none" 
                        />
                      </div>
                    </div>
@@ -360,7 +359,7 @@ export default function TasksPage() {
                    <div className="pt-4">
                      <Button 
                        variant="destructive" 
-                       className="w-full gap-2 rounded-xl"
+                       className="w-full h-11 gap-2 rounded-xl"
                        onClick={() => {
                          deleteTask(editingTask.id)
                          setIsDetailsOpen(false)
@@ -371,8 +370,8 @@ export default function TasksPage() {
                    </div>
                 </div>
               </div>
-              <DialogFooter>
-                <Button onClick={() => setIsDetailsOpen(false)} className="w-full bg-primary font-black py-6 rounded-xl">Seal Operational File</Button>
+              <DialogFooter className="sticky bottom-0 bg-card/95 pt-4">
+                <Button onClick={() => setIsDetailsOpen(false)} className="w-full bg-primary font-black h-12 rounded-xl uppercase tracking-widest text-[10px]">Seal Operational File</Button>
               </DialogFooter>
             </>
           )}
@@ -393,63 +392,61 @@ export default function TasksPage() {
           "absolute left-0 top-0 bottom-0 w-1 transition-colors",
           task.priority === "high" ? "bg-red-500" : task.priority === "medium" ? "bg-orange-500" : "bg-blue-500"
         )} />
-        <CardContent className="p-4 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4 flex-1 min-w-0">
+        <CardContent className="p-3 md:p-4 flex items-center justify-between gap-3 md:gap-4">
+          <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0">
             <Button 
               size="icon" 
               variant="ghost" 
-              onClick={() => handleToggle(task.id)}
+              onClick={(e) => {
+                e.stopPropagation()
+                handleToggle(task.id)
+              }}
               className={cn(
-                "h-10 w-10 rounded-full border-2 transition-all flex-shrink-0",
+                "h-11 w-11 rounded-full border-2 transition-all flex-shrink-0",
                 task.completed ? "bg-accent border-accent text-white" : "border-muted-foreground/30 hover:border-primary"
               )}
             >
-              {task.completed ? <CheckCircle2 className="h-5 w-5" /> : <Circle className="h-5 w-5" />}
+              {task.completed ? <CheckCircle2 className="h-6 w-6" /> : <Circle className="h-6 w-6" />}
             </Button>
             
-            <div className="flex-1 min-w-0">
+            <div 
+              className="flex-1 min-w-0 cursor-pointer"
+              onClick={() => {
+                setEditingTask(task)
+                setIsDetailsOpen(true)
+              }}
+            >
               <div className="flex items-center gap-2 mb-1">
                 <PriorityBadge priority={task.priority} />
                 {task.timeEstimate && (
-                  <span className="text-[10px] font-bold text-muted-foreground flex items-center gap-1">
+                  <span className="text-[9px] md:text-[10px] font-bold text-muted-foreground flex items-center gap-1">
                     <Clock className="h-3 w-3" /> {task.timeEstimate}
                   </span>
                 )}
               </div>
-              <p className={cn("font-bold text-foreground truncate", task.completed && "line-through decoration-primary opacity-50")}>
+              <p className={cn("font-bold text-sm md:text-base text-foreground truncate", task.completed && "line-through decoration-primary opacity-50")}>
                 {task.title}
               </p>
-              <div className="flex items-center gap-3 mt-1.5">
+              <div className="flex flex-wrap items-center gap-2 md:gap-3 mt-1.5">
                 {task.goalId && (
-                  <span className="text-[9px] font-black uppercase text-accent/80 flex items-center gap-1">
+                  <span className="text-[8px] md:text-[9px] font-black uppercase text-accent/80 flex items-center gap-1 truncate max-w-[120px]">
                     <Zap className="h-2.5 w-2.5" /> {goals.find(g => g.id === task.goalId)?.title}
                   </span>
                 )}
                 {task.subtasks.length > 0 && (
-                  <span className="text-[9px] font-bold text-muted-foreground flex items-center gap-1">
-                    <ListChecks className="h-2.5 w-2.5" /> {task.subtasks.filter(s => s.completed).length}/{task.subtasks.length} sub-tasks
+                  <span className="text-[8px] md:text-[9px] font-bold text-muted-foreground flex items-center gap-1">
+                    <ListChecks className="h-2.5 w-2.5" /> {task.subtasks.filter(s => s.completed).length}/{task.subtasks.length}
                   </span>
                 )}
               </div>
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 md:gap-2">
              <Button 
                variant="ghost" 
                size="icon" 
-               className="h-10 w-10 text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-               onClick={() => {
-                 setEditingTask(task)
-                 setIsDetailsOpen(true)
-               }}
-             >
-               <Plus className="h-5 w-5 rotate-45" />
-             </Button>
-             <Button 
-               variant="ghost" 
-               size="icon" 
-               className="h-10 w-10 text-muted-foreground hover:text-accent opacity-0 group-hover:opacity-100 transition-opacity"
+               className="h-10 w-10 text-muted-foreground hover:text-foreground md:opacity-0 group-hover:opacity-100 transition-opacity"
                onClick={() => {
                  setEditingTask(task)
                  setIsDetailsOpen(true)
