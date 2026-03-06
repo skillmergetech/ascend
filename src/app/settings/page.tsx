@@ -1,3 +1,4 @@
+
 "use client"
 
 import { AppShell } from "@/components/layout/Shell"
@@ -9,11 +10,12 @@ import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useAscend } from "@/lib/store"
-import { User, Settings as SettingsIcon, Shield, Download, Trash2, Moon, Sun, Bell, Globe, Sparkles, Camera, History } from "lucide-react"
+import { User, Settings as SettingsIcon, Shield, Download, Trash2, Moon, Sun, Bell, Globe, Sparkles, Camera, History, Upload } from "lucide-react"
 import { useTheme } from "next-themes"
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { cn } from "@/lib/utils"
+import { useToast } from "@/hooks/use-toast"
 
 const AVATAR_OPTIONS = [
   "user", "star", "zap", "shield", "rocket", "flame", "target", "trophy"
@@ -22,11 +24,41 @@ const AVATAR_OPTIONS = [
 export default function SettingsPage() {
   const { user, updateUser, settings, updateSettings, exportData, resetData, level, xp, achievements } = useAscend()
   const { theme, setTheme } = useTheme()
+  const { toast } = useToast()
   const [name, setName] = useState(user.name)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleUpdateName = () => {
     if (name.trim()) {
       updateUser({ name })
+      toast({
+        title: "Profile Updated",
+        description: "Your operational name has been registered.",
+      })
+    }
+  }
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        toast({
+          variant: "destructive",
+          title: "File Too Large",
+          description: "Please upload an image smaller than 2MB.",
+        })
+        return
+      }
+
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        updateUser({ avatar: reader.result as string })
+        toast({
+          title: "Icon Uploaded",
+          description: "Your custom identity icon is now active.",
+        })
+      }
+      reader.readAsDataURL(file)
     }
   }
 
@@ -55,30 +87,55 @@ export default function SettingsPage() {
                   <CardTitle className="text-lg font-bold">Identity Icon</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="relative group mx-auto w-32 h-32">
+                  <div 
+                    className="relative group mx-auto w-32 h-32 cursor-pointer"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
                     <img 
                       src={user.avatar} 
                       alt="Profile" 
-                      className="w-full h-full rounded-3xl object-cover shadow-2xl border-4 border-primary/20" 
+                      className="w-full h-full rounded-3xl object-cover shadow-2xl border-4 border-primary/20 transition-transform group-hover:scale-[1.02]" 
                     />
-                    <div className="absolute inset-0 bg-black/40 rounded-3xl opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer">
-                      <Camera className="text-white h-8 w-8" />
+                    <div className="absolute inset-0 bg-black/40 rounded-3xl opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition-opacity gap-2">
+                      <Camera className="text-white h-6 w-6" />
+                      <span className="text-[10px] text-white font-black uppercase">Upload</span>
                     </div>
                   </div>
-                  <div className="grid grid-cols-4 gap-2">
-                    {AVATAR_OPTIONS.map((url, i) => (
-                      <button 
-                        key={i} 
-                        onClick={() => updateUser({ avatar: url })}
-                        className={cn(
-                          "aspect-square rounded-lg overflow-hidden border-2 transition-all",
-                          user.avatar === url ? "border-primary scale-95" : "border-transparent opacity-60 hover:opacity-100"
-                        )}
-                      >
-                        <img src={url} alt="Option" className="w-full h-full object-cover" />
-                      </button>
-                    ))}
+                  
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    onChange={handleFileUpload} 
+                    className="hidden" 
+                    accept="image/*" 
+                  />
+
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-black uppercase text-muted-foreground text-center block">Quick Presets</Label>
+                    <div className="grid grid-cols-4 gap-2">
+                      {AVATAR_OPTIONS.map((url, i) => (
+                        <button 
+                          key={i} 
+                          onClick={() => updateUser({ avatar: url })}
+                          className={cn(
+                            "aspect-square rounded-lg overflow-hidden border-2 transition-all",
+                            user.avatar === url ? "border-primary scale-95" : "border-transparent opacity-60 hover:opacity-100"
+                          )}
+                        >
+                          <img src={url} alt="Option" className="w-full h-full object-cover" />
+                        </button>
+                      ))}
+                    </div>
                   </div>
+
+                  <Button 
+                    variant="outline" 
+                    className="w-full border-dashed border-primary/30 hover:bg-primary/5 h-12"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Custom Upload
+                  </Button>
                 </CardContent>
               </Card>
 
@@ -95,8 +152,9 @@ export default function SettingsPage() {
                           value={name} 
                           onChange={(e) => setName(e.target.value)} 
                           className="bg-muted/30 border-none h-12 font-bold"
+                          placeholder="Your designation..."
                         />
-                        <Button onClick={handleUpdateName} className="bg-primary h-12">Update</Button>
+                        <Button onClick={handleUpdateName} className="bg-primary h-12 px-6">Update</Button>
                       </div>
                     </div>
                     <div className="pt-4 flex items-center gap-6">
