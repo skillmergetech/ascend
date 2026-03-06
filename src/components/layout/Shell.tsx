@@ -1,3 +1,4 @@
+
 "use client"
 
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
@@ -10,7 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { useTheme } from "next-themes"
 
@@ -38,12 +39,53 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const { theme, setTheme } = useTheme()
-  const { momentum, level, xp, streak, settings, toggleMute, user, completeOnboarding } = useAscend()
+  const { momentum, level, xp, streak, settings, toggleMute, user, completeOnboarding, tasks } = useAscend()
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const notifiedTasks = useRef<Set<string>>(new Set())
   
   const nextLevelXp = level * 1000
   const xpProgress = (xp / nextLevelXp) * 100
+
+  // Notification Logic
+  useEffect(() => {
+    if (!mounted || !settings.notifications) return
+
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission()
+    }
+
+    const checkTasks = () => {
+      const now = new Date()
+      const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`
+      const today = now.toISOString().split('T')[0]
+
+      tasks.forEach(task => {
+        if (
+          task.date === today && 
+          task.startTime === currentTime && 
+          !task.completed && 
+          !notifiedTasks.current.has(task.id)
+        ) {
+          if ("Notification" in window && Notification.permission === "granted") {
+            new Notification("Mission Start", {
+              body: `Deployment ready: ${task.title}`,
+              icon: "/favicon.ico" // Placeholder
+            })
+            notifiedTasks.current.add(task.id)
+          }
+        }
+      })
+
+      // Reset notified set if a new day starts
+      if (now.getHours() === 0 && now.getMinutes() === 0) {
+        notifiedTasks.current.clear()
+      }
+    }
+
+    const interval = setInterval(checkTasks, 10000) // Check every 10 seconds
+    return () => clearInterval(interval)
+  }, [mounted, settings.notifications, tasks])
 
   useEffect(() => {
     setMounted(true)
