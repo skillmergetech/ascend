@@ -342,6 +342,27 @@ export default function TasksPage() {
                      </Select>
                    </div>
 
+                   <div className="grid grid-cols-2 gap-4">
+                     <div className="space-y-2">
+                       <Label className="text-[10px] font-black uppercase text-muted-foreground">Start</Label>
+                       <Input 
+                         type="time" 
+                         value={editingTask.startTime || ""} 
+                         onChange={(e) => updateTask(editingTask.id, { startTime: e.target.value })}
+                         className="bg-muted/30 border-none h-11" 
+                       />
+                     </div>
+                     <div className="space-y-2">
+                       <Label className="text-[10px] font-black uppercase text-muted-foreground">Finish</Label>
+                       <Input 
+                         type="time" 
+                         value={editingTask.endTime || ""} 
+                         onChange={(e) => updateTask(editingTask.id, { endTime: e.target.value })}
+                         className="bg-muted/30 border-none h-11" 
+                       />
+                     </div>
+                   </div>
+
                    <div className="space-y-2">
                      <Label className="text-[10px] md:text-xs font-black uppercase text-muted-foreground">Priority Tier</Label>
                      <Select value={editingTask.priority} onValueChange={(v) => updateTask(editingTask.id, { priority: v as PriorityType })}>
@@ -431,7 +452,12 @@ export default function TasksPage() {
             >
               <div className="flex items-center gap-2 mb-1">
                 <PriorityBadge priority={task.priority} />
-                {task.timeEstimate && (
+                {(task.startTime || task.endTime) && (
+                  <span className="text-[9px] md:text-[10px] font-bold text-accent flex items-center gap-1">
+                    <Clock className="h-3 w-3" /> {task.startTime || "--:--"} - {task.endTime || "--:--"}
+                  </span>
+                )}
+                {task.timeEstimate && !task.startTime && !task.endTime && (
                   <span className="text-[9px] md:text-[10px] font-bold text-muted-foreground flex items-center gap-1">
                     <Clock className="h-3 w-3" /> {task.timeEstimate}
                   </span>

@@ -51,6 +51,8 @@ export interface Task {
   priority: PriorityType
   description?: string
   timeEstimate?: string
+  startTime?: string
+  endTime?: string
   subtasks: SubTask[]
   timeOfDay?: "morning" | "evening" | "any"
 }
