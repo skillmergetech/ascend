@@ -76,11 +76,31 @@ export interface FinanceData {
   expenses: Expense[]
 }
 
+export interface Review {
+  id: string
+  date: string
+  type: "weekly" | "monthly"
+  stats: {
+    tasksCompleted: number
+    tasksTotal: number
+    goalsCompleted: number
+    xpEarned: number
+    totalSpent: number
+  }
+  reflections: {
+    wins: string
+    obstacles: string
+    improvements: string
+  }
+  intentions: string[]
+}
+
 interface AscendStore {
   user: UserProfile
   goals: Goal[]
   tasks: Task[]
   finance: FinanceData
+  reviews: Review[]
   momentum: number
   streak: number
   xp: number
@@ -104,6 +124,7 @@ interface AscendStore {
   setIncome: (income: number) => void
   addExpense: (expense: Omit<Expense, "id">) => void
   deleteExpense: (id: string) => void
+  addReview: (review: Omit<Review, "id" | "date">) => void
   updateSettings: (settings: Partial<AscendStore["settings"]>) => void
   toggleMute: () => void
   exportData: () => void
@@ -145,6 +166,7 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
   const [goals, setGoals] = useState<Goal[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
   const [finance, setFinance] = useState<FinanceData>(DEFAULT_FINANCE)
+  const [reviews, setReviews] = useState<Review[]>([])
   const [momentum, setMomentum] = useState(0)
   const [streak, setStreak] = useState(0)
   const [xp, setXp] = useState(0)
@@ -163,7 +185,7 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
   const getNextLevelXp = (lvl: number) => lvl * 1000
 
   useEffect(() => {
-    const stored = localStorage.getItem("ascend_data_v3")
+    const stored = localStorage.getItem("ascend_data_v4")
     if (stored) {
       try {
         const parsed = JSON.parse(stored)
@@ -186,7 +208,8 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
           },
           expenses: loadedFinance.expenses || []
         })
-        
+
+        setReviews(parsed.reviews || [])
         setMomentum(parsed.momentum || 0)
         setStreak(parsed.streak || 0)
         setXp(parsed.xp || 0)
@@ -205,11 +228,11 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (hydrated) {
-      localStorage.setItem("ascend_data_v3", JSON.stringify({ 
-        user, goals, tasks, finance, momentum, streak, xp, level, achievements, settings 
+      localStorage.setItem("ascend_data_v4", JSON.stringify({ 
+        user, goals, tasks, finance, reviews, momentum, streak, xp, level, achievements, settings 
       }))
     }
-  }, [user, goals, tasks, finance, momentum, streak, xp, level, achievements, settings, hydrated])
+  }, [user, goals, tasks, finance, reviews, momentum, streak, xp, level, achievements, settings, hydrated])
 
   const updateUser = (update: Partial<UserProfile>) => {
     setUser(prev => ({ ...prev, ...update }))
@@ -221,12 +244,12 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
   }
 
   const resetData = () => {
-    localStorage.removeItem("ascend_data_v3")
+    localStorage.removeItem("ascend_data_v4")
     window.location.reload()
   }
 
   const exportData = () => {
-    const data = { user, goals, tasks, finance, momentum, streak, xp, level, achievements, settings }
+    const data = { user, goals, tasks, finance, reviews, momentum, streak, xp, level, achievements, settings }
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" })
     const url = URL.createObjectURL(blob)
     const link = document.createElement("a")
@@ -411,14 +434,29 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
     }))
   }
 
+  const addReview = (reviewData: Omit<Review, "id" | "date">) => {
+    const newReview: Review = {
+      ...reviewData,
+      id: Math.random().toString(36).substring(2, 11),
+      date: new Date().toISOString()
+    }
+    setReviews(prev => [...prev, newReview])
+    toast({ title: "Mission Review Sealed", description: "Operational records updated." })
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 }
+    })
+  }
+
   const toggleMute = () => {
     setSettings(prev => ({ ...prev, mute: !prev.mute }))
   }
 
   return (
     <AscendContext.Provider value={{ 
-      user, goals, tasks, finance, momentum, streak, xp, level, achievements, settings,
-      updateUser, addGoal, updateGoal, deleteGoal, toggleGoal, addTask, updateTask, toggleTask, deleteTask, setIncome, addExpense, deleteExpense, 
+      user, goals, tasks, finance, reviews, momentum, streak, xp, level, achievements, settings,
+      updateUser, addGoal, updateGoal, deleteGoal, toggleGoal, addTask, updateTask, toggleTask, deleteTask, setIncome, addExpense, deleteExpense, addReview,
       updateSettings, toggleMute, exportData, resetData
     }}>
       {children}

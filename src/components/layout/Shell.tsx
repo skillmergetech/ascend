@@ -1,7 +1,7 @@
 "use client"
 
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-import { Home, Target, CheckSquare, Wallet, Sparkles, LogOut, TrendingUp, Zap, Trophy, Flame, Volume2, VolumeX, BarChart3, Settings } from "lucide-react"
+import { Home, Target, CheckSquare, Wallet, Sparkles, LogOut, TrendingUp, Zap, Trophy, Flame, Volume2, VolumeX, BarChart3, Settings, ClipboardCheck } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useAscend } from "@/lib/store"
@@ -14,6 +14,7 @@ const items = [
   { title: "Goal Hierarchy", url: "/goals", icon: Target },
   { title: "Daily Tasks", url: "/tasks", icon: CheckSquare },
   { title: "Finance", url: "/finance", icon: Wallet },
+  { title: "Mission Review", url: "/review", icon: ClipboardCheck },
   { title: "Performance Hub", url: "/performance", icon: BarChart3 },
   { title: "Rewards Center", url: "/rewards", icon: Trophy },
   { title: "Goal Assistant", url: "/assistant", icon: Sparkles },
