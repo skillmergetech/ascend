@@ -1,3 +1,4 @@
+
 "use client"
 
 import { AppShell } from "@/components/layout/Shell"
@@ -27,6 +28,8 @@ export default function TasksPage() {
   const [newTitle, setNewTitle] = useState("")
   const [newPriority, setNewPriority] = useState<PriorityType>("medium")
   const [selectedGoal, setSelectedGoal] = useState<string>("none")
+  const [newStartTime, setNewStartTime] = useState("")
+  const [newEndTime, setNewEndTime] = useState("")
   const [viewMode, setViewMode] = useState<"morning" | "evening" | "all">("all")
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [isDetailsOpen, setIsDetailsOpen] = useState(false)
@@ -52,10 +55,14 @@ export default function TasksPage() {
       date: today,
       goalId: selectedGoal === "none" ? undefined : selectedGoal,
       timeOfDay: viewMode === "all" ? "any" : viewMode,
-      priority: newPriority
+      priority: newPriority,
+      startTime: newStartTime,
+      endTime: newEndTime
     })
     setNewTitle("")
     setNewPriority("medium")
+    setNewStartTime("")
+    setNewEndTime("")
     toast({
       title: "Task Logged",
       description: `Priority ${newPriority} mission established.`,
@@ -95,7 +102,7 @@ export default function TasksPage() {
 
   return (
     <AppShell>
-      <div className="max-w-5xl mx-auto space-y-8 md:space-y-10 pb-20">
+      <div className="max-w-6xl mx-auto space-y-8 md:space-y-10 pb-20">
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="space-y-2">
             <h1 className="text-3xl md:text-4xl font-black font-headline italic uppercase tracking-tighter flex items-center gap-3">
@@ -183,38 +190,72 @@ export default function TasksPage() {
 
         {/* Quick Add Bar */}
         <Card className="border-none shadow-xl bg-card/40 backdrop-blur-md">
-          <CardContent className="p-4 flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
-              <Input 
-                placeholder="New objective..." 
-                value={newTitle}
-                onChange={(e) => setNewTitle(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleAddTask()}
-                className="pl-10 h-11 md:h-12 bg-muted/30 border-none font-bold placeholder:font-medium placeholder:text-muted-foreground"
-              />
-              <LayoutGrid className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <CardContent className="p-4 flex flex-col lg:flex-row gap-4 items-end">
+            <div className="flex-1 w-full space-y-2">
+              <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Objective</Label>
+              <div className="relative">
+                <Input 
+                  placeholder="New objective..." 
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddTask()}
+                  className="pl-10 h-11 md:h-12 bg-muted/30 border-none font-bold placeholder:font-medium placeholder:text-muted-foreground"
+                />
+                <LayoutGrid className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              </div>
             </div>
-            <Select value={newPriority} onValueChange={(v) => setNewPriority(v as PriorityType)}>
-              <SelectTrigger className="w-full sm:w-40 h-11 md:h-12 bg-muted/30 border-none">
-                <SelectValue placeholder="Priority" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="low">Low</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={selectedGoal} onValueChange={setSelectedGoal}>
-              <SelectTrigger className="w-full sm:w-64 h-11 md:h-12 bg-muted/30 border-none">
-                <SelectValue placeholder="Strategic Link" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">General Mission</SelectItem>
-                {weeklyGoals.map(g => <SelectItem key={g.id} value={g.id}>{g.title}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Button onClick={handleAddTask} className="h-11 md:h-12 px-8 bg-primary hover:bg-primary/90 rounded-xl font-black uppercase text-[10px] md:text-xs">
-              Deploy
+            
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full lg:w-auto">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Priority</Label>
+                <Select value={newPriority} onValueChange={(v) => setNewPriority(v as PriorityType)}>
+                  <SelectTrigger className="w-full h-11 md:h-12 bg-muted/30 border-none">
+                    <SelectValue placeholder="Priority" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="low">Low</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Strategy</Label>
+                <Select value={selectedGoal} onValueChange={setSelectedGoal}>
+                  <SelectTrigger className="w-full h-11 md:h-12 bg-muted/30 border-none">
+                    <SelectValue placeholder="Goal Link" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">General</SelectItem>
+                    {weeklyGoals.map(g => <SelectItem key={g.id} value={g.id}>{g.title}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Start</Label>
+                <Input 
+                  type="time" 
+                  value={newStartTime} 
+                  onChange={(e) => setNewStartTime(e.target.value)}
+                  className="h-11 md:h-12 bg-muted/30 border-none font-bold"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Finish</Label>
+                <Input 
+                  type="time" 
+                  value={newEndTime} 
+                  onChange={(e) => setNewEndTime(e.target.value)}
+                  className="h-11 md:h-12 bg-muted/30 border-none font-bold"
+                />
+              </div>
+            </div>
+
+            <Button onClick={handleAddTask} className="h-11 md:h-12 px-8 bg-primary hover:bg-primary/90 rounded-xl font-black uppercase text-[10px] md:text-xs w-full lg:w-auto shrink-0">
+              Deploy Mission
             </Button>
           </CardContent>
         </Card>
@@ -260,6 +301,14 @@ export default function TasksPage() {
             <TabsContent value="goal" className="space-y-6">
               <div className="grid grid-cols-1 gap-2.5">
                 {filteredTasks.map(task => (
+                  <TaskItem key={task.id} task={task} />
+                ))}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="time" className="space-y-6">
+              <div className="grid grid-cols-1 gap-2.5">
+                {[...filteredTasks].sort((a, b) => (a.startTime || "").localeCompare(b.startTime || "")).map(task => (
                   <TaskItem key={task.id} task={task} />
                 ))}
               </div>
