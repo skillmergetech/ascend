@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
 import { Progress } from "@/components/ui/progress"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { useAscend, Expense } from "@/lib/store"
+import { useAscend } from "@/lib/store"
 import { Wallet, PieChart as PieChartIcon, Landmark, Heart, PiggyBank, Briefcase, Plus, Trash2, ArrowUpRight, TrendingUp, AlertTriangle, Coins } from "lucide-react"
 import { useState, useMemo } from "react"
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from "recharts"
@@ -25,23 +25,27 @@ export default function FinancePage() {
   const [expenseCategory, setExpenseCategory] = useState("Daily Needs")
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false)
 
+  // Safe accessors for nested data
+  const allocations = finance?.allocations || { tithe: 0, savings: 0, charity: 0, investments: 0, dailyNeeds: 0, misc: 0 }
+  const expenses = finance?.expenses || []
+
   const categories = [
-    { label: "Savings", icon: PiggyBank, percent: 30, color: "#3b82f6", bg: "bg-blue-500/10", value: finance.allocations.savings },
-    { label: "Daily Needs", icon: Briefcase, percent: 25, color: "#22c55e", bg: "bg-green-500/10", value: finance.allocations.dailyNeeds },
-    { label: "Investments", icon: Landmark, percent: 20, color: "#a855f7", bg: "bg-purple-500/10", value: finance.allocations.investments },
-    { label: "Tithe", icon: Heart, percent: 10, color: "#f97316", bg: "bg-orange-500/10", value: finance.allocations.tithe },
-    { label: "Misc", icon: Coins, percent: 10, color: "#64748b", bg: "bg-slate-500/10", value: finance.allocations.misc },
-    { label: "Charity", icon: Heart, percent: 5, color: "#ec4899", bg: "bg-pink-500/10", value: finance.allocations.charity },
+    { label: "Savings", icon: PiggyBank, percent: 30, color: "#3b82f6", bg: "bg-blue-500/10", value: allocations.savings },
+    { label: "Daily Needs", icon: Briefcase, percent: 25, color: "#22c55e", bg: "bg-green-500/10", value: allocations.dailyNeeds },
+    { label: "Investments", icon: Landmark, percent: 20, color: "#a855f7", bg: "bg-purple-500/10", value: allocations.investments },
+    { label: "Tithe", icon: Heart, percent: 10, color: "#f97316", bg: "bg-orange-500/10", value: allocations.tithe },
+    { label: "Misc", icon: Coins, percent: 10, color: "#64748b", bg: "bg-slate-500/10", value: allocations.misc },
+    { label: "Charity", icon: Heart, percent: 5, color: "#ec4899", bg: "bg-pink-500/10", value: allocations.charity },
   ]
 
   const chartData = categories.map(cat => ({
     name: cat.label,
-    value: cat.value,
+    value: cat.value || 0,
     color: cat.color
   }))
 
   const getExpensesByCategory = (category: string) => {
-    return finance.expenses
+    return expenses
       .filter(e => e.category === category)
       .reduce((sum, e) => sum + e.amount, 0)
   }
@@ -61,13 +65,13 @@ export default function FinancePage() {
   }
 
   const savingsProjection = useMemo(() => {
-    const monthlyRate = finance.allocations.savings + finance.allocations.investments
+    const monthlyRate = (allocations.savings || 0) + (allocations.investments || 0)
     return {
       oneYear: monthlyRate * 12,
       fiveYears: monthlyRate * 60,
       tenYears: monthlyRate * 120
     }
-  }, [finance.allocations])
+  }, [allocations])
 
   return (
     <AppShell>
@@ -91,7 +95,7 @@ export default function FinancePage() {
                     type="number" 
                     placeholder="0.00" 
                     className="pl-8 font-black text-xl border-none bg-primary/10 focus-visible:ring-primary rounded-xl h-12"
-                    value={finance.monthlyIncome || ""}
+                    value={finance?.monthlyIncome || ""}
                     onChange={(e) => setIncome(Number(e.target.value))}
                   />
                 </div>
@@ -139,7 +143,6 @@ export default function FinancePage() {
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Allocation Analysis */}
           <div className="lg:col-span-7 space-y-8">
             <Card className="border-none bg-card/40 backdrop-blur-xl shadow-2xl">
               <CardHeader>
@@ -179,7 +182,7 @@ export default function FinancePage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {categories.map((cat) => {
                 const spent = getExpensesByCategory(cat.label)
-                const limit = cat.value
+                const limit = cat.value || 0
                 const progress = limit > 0 ? (spent / limit) * 100 : 0
                 const isNearingLimit = progress > 80 && progress < 100
                 const isOverLimit = progress >= 100
@@ -228,7 +231,6 @@ export default function FinancePage() {
             </div>
           </div>
 
-          {/* Right Column: Projections & History */}
           <div className="lg:col-span-5 space-y-8">
             <Card className="border-none shadow-2xl ascend-gradient text-white relative overflow-hidden">
                <div className="absolute -bottom-10 -right-10 opacity-10">
@@ -250,7 +252,7 @@ export default function FinancePage() {
                        <h3 className="text-3xl font-black">${proj.value.toLocaleString()}</h3>
                        <div className="mt-2 flex items-center gap-1 text-[10px] font-bold text-white/50">
                          <ArrowUpRight className="h-3 w-3" />
-                         Based on current ${((finance.allocations.savings + finance.allocations.investments)).toLocaleString()}/mo rate
+                         Based on current ${((allocations.savings || 0) + (allocations.investments || 0)).toLocaleString()}/mo rate
                        </div>
                      </div>
                    ))}
@@ -277,8 +279,8 @@ export default function FinancePage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {finance.expenses.length > 0 ? (
-                        finance.expenses.slice().reverse().slice(0, 8).map((expense) => (
+                      {expenses.length > 0 ? (
+                        expenses.slice().reverse().slice(0, 8).map((expense) => (
                           <TableRow key={expense.id} className="hover:bg-muted/30">
                             <TableCell>
                               <p className="font-bold text-sm">{expense.description}</p>

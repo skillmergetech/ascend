@@ -126,16 +126,32 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const stored = localStorage.getItem("ascend_data_v2")
     if (stored) {
-      const parsed = JSON.parse(stored)
-      setGoals(parsed.goals || [])
-      setTasks(parsed.tasks || [])
-      setFinance(parsed.finance || DEFAULT_FINANCE)
-      setMomentum(parsed.momentum || 0)
-      setStreak(parsed.streak || 0)
-      setXp(parsed.xp || 0)
-      setLevel(parsed.level || 1)
-      setAchievements(parsed.achievements || INITIAL_ACHIEVEMENTS)
-      setSettings(parsed.settings || { mute: false })
+      try {
+        const parsed = JSON.parse(stored)
+        setGoals(parsed.goals || [])
+        setTasks(parsed.tasks || [])
+        
+        // Ensure finance object is fully formed with all nested properties
+        const loadedFinance = parsed.finance || DEFAULT_FINANCE
+        setFinance({
+          ...DEFAULT_FINANCE,
+          ...loadedFinance,
+          allocations: {
+            ...DEFAULT_FINANCE.allocations,
+            ...(loadedFinance.allocations || {})
+          },
+          expenses: loadedFinance.expenses || []
+        })
+        
+        setMomentum(parsed.momentum || 0)
+        setStreak(parsed.streak || 0)
+        setXp(parsed.xp || 0)
+        setLevel(parsed.level || 1)
+        setAchievements(parsed.achievements || INITIAL_ACHIEVEMENTS)
+        setSettings(parsed.settings || { mute: false })
+      } catch (e) {
+        console.error("Failed to parse stored data", e)
+      }
     }
     setHydrated(true)
   }, [])
@@ -301,14 +317,14 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
     }
     setFinance(prev => ({
       ...prev,
-      expenses: [...prev.expenses, newExpense]
+      expenses: [...(prev.expenses || []), newExpense]
     }))
   }
 
   const deleteExpense = (id: string) => {
     setFinance(prev => ({
       ...prev,
-      expenses: prev.expenses.filter(e => e.id !== id)
+      expenses: (prev.expenses || []).filter(e => e.id !== id)
     }))
   }
 
