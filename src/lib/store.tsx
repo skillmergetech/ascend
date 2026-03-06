@@ -36,15 +36,26 @@ export interface Task {
   date: string
 }
 
+export interface Expense {
+  id: string
+  amount: number
+  category: string
+  date: string
+  description: string
+}
+
 export interface FinanceData {
   monthlyIncome: number
+  currency: string
   allocations: {
     tithe: number
     savings: number
     charity: number
     investments: number
     dailyNeeds: number
+    misc: number
   }
+  expenses: Expense[]
 }
 
 interface AscendStore {
@@ -67,18 +78,23 @@ interface AscendStore {
   toggleTask: (id: string) => void
   deleteTask: (id: string) => void
   setIncome: (income: number) => void
+  addExpense: (expense: Omit<Expense, "id">) => void
+  deleteExpense: (id: string) => void
   toggleMute: () => void
 }
 
 const DEFAULT_FINANCE: FinanceData = {
   monthlyIncome: 0,
+  currency: "USD",
   allocations: {
     tithe: 0,
     savings: 0,
     charity: 0,
     investments: 0,
     dailyNeeds: 0,
+    misc: 0,
   },
+  expenses: [],
 }
 
 const INITIAL_ACHIEVEMENTS: Achievement[] = [
@@ -149,7 +165,6 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
     const newAchievements = [...achievements]
     let updated = false
 
-    // First Task
     if (!newAchievements.find(a => a.id === "first_task")?.unlockedAt && tasks.some(t => t.completed)) {
       const idx = newAchievements.findIndex(a => a.id === "first_task")
       if (idx !== -1) {
@@ -159,7 +174,6 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // Streak 7
     if (!newAchievements.find(a => a.id === "streak_7")?.unlockedAt && streak >= 7) {
       const idx = newAchievements.findIndex(a => a.id === "streak_7")
       if (idx !== -1) {
@@ -169,7 +183,6 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // Cascade 5
     const linkedGoalsCount = goals.filter(g => g.parentId).length
     if (!newAchievements.find(a => a.id === "cascade_5")?.unlockedAt && linkedGoalsCount >= 5) {
       const idx = newAchievements.findIndex(a => a.id === "cascade_5")
@@ -267,7 +280,8 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
   }
 
   const setIncome = (income: number) => {
-    setFinance({
+    setFinance(prev => ({
+      ...prev,
       monthlyIncome: income,
       allocations: {
         tithe: income * 0.10,
@@ -275,8 +289,27 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
         charity: income * 0.05,
         investments: income * 0.20,
         dailyNeeds: income * 0.25,
+        misc: income * 0.10,
       }
-    })
+    }))
+  }
+
+  const addExpense = (expenseData: Omit<Expense, "id">) => {
+    const newExpense: Expense = {
+      ...expenseData,
+      id: Math.random().toString(36).substring(2, 11),
+    }
+    setFinance(prev => ({
+      ...prev,
+      expenses: [...prev.expenses, newExpense]
+    }))
+  }
+
+  const deleteExpense = (id: string) => {
+    setFinance(prev => ({
+      ...prev,
+      expenses: prev.expenses.filter(e => e.id !== id)
+    }))
   }
 
   const toggleMute = () => {
@@ -286,7 +319,7 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
   return (
     <AscendContext.Provider value={{ 
       goals, tasks, finance, momentum, streak, xp, level, achievements, settings,
-      addGoal, updateGoal, deleteGoal, toggleGoal, addTask, toggleTask, deleteTask, setIncome, toggleMute
+      addGoal, updateGoal, deleteGoal, toggleGoal, addTask, toggleTask, deleteTask, setIncome, addExpense, deleteExpense, toggleMute
     }}>
       {children}
     </AscendContext.Provider>
