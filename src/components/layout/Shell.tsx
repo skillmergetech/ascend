@@ -2,7 +2,7 @@
 "use client"
 
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-import { Home, Target, CheckSquare, Wallet, Sparkles, LogOut, TrendingUp, Zap, Trophy, Flame, Volume2, VolumeX, BarChart3, Settings, ClipboardCheck, Menu, Command, Sun, Moon } from "lucide-react"
+import { Home, Target, CheckSquare, Wallet, Sparkles, LogOut, TrendingUp, Zap, Trophy, Flame, Volume2, VolumeX, BarChart3, Settings, ClipboardCheck, Menu, Command, Sun, Moon, Download } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useAscend } from "@/lib/store"
@@ -42,10 +42,40 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { momentum, level, xp, streak, settings, toggleMute, user, completeOnboarding, tasks } = useAscend()
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
   const notifiedTasks = useRef<Set<string>>(new Set())
   
   const nextLevelXp = level * 1000
   const xpProgress = (xp / nextLevelXp) * 100
+
+  // PWA Install Prompt Logic
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault()
+      setDeferredPrompt(e)
+    }
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+    
+    // Register Service Worker for PWA compliance
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(err => {
+        // Silently fail as sw.js might not exist yet, 
+        // but the registration call is needed for installability checks
+      })
+    }
+
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+  }, [])
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return
+    deferredPrompt.prompt()
+    const { outcome } = await deferredPrompt.userChoice
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null)
+    }
+  }
 
   // Notification Logic
   useEffect(() => {
@@ -77,13 +107,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         }
       })
 
-      // Reset notified set if a new day starts
       if (now.getHours() === 0 && now.getMinutes() === 0) {
         notifiedTasks.current.clear()
       }
     }
 
-    const interval = setInterval(checkTasks, 10000) // Check every 10 seconds
+    const interval = setInterval(checkTasks, 10000)
     return () => clearInterval(interval)
   }, [mounted, settings.notifications, tasks])
 
@@ -180,6 +209,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </SidebarGroup>
           </SidebarContent>
           <SidebarFooter className="p-4 space-y-4">
+            {deferredPrompt && (
+              <Button 
+                onClick={handleInstallClick}
+                className="w-full bg-accent hover:bg-accent/90 text-white font-black uppercase text-[10px] tracking-widest py-6 rounded-xl shadow-lg shadow-accent/20"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Install App
+              </Button>
+            )}
             <div className="flex items-center justify-between px-2">
                <div className="flex items-center gap-2">
                  <Flame className="h-5 w-5 text-orange-500 fill-orange-500/20" />
@@ -203,9 +241,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <span className="text-xl font-black">{momentum}<span className="text-sm opacity-60">/100</span></span>
                 <Zap className="h-5 w-5 fill-white animate-pulse" />
               </div>
-            </div>
-            <div className="text-center">
-              <p className="text-[8px] font-black uppercase text-muted-foreground tracking-widest opacity-30">Ascend v1.2.0 • 2024 Achiever's Suite</p>
             </div>
           </SidebarFooter>
         </Sidebar>
@@ -245,21 +280,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </div>
             </div>
             <div className="flex items-center gap-4">
+              {deferredPrompt && (
+                <Button 
+                  onClick={handleInstallClick}
+                  className="hidden md:flex h-11 bg-accent hover:bg-accent/90 text-white font-black uppercase text-[10px] tracking-widest px-6 rounded-xl shadow-lg shadow-accent/20"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Install App
+                </Button>
+              )}
               <TooltipProvider>
                 <div className="hidden lg:flex items-center gap-2 mr-4 bg-muted/20 px-3 py-1.5 rounded-full border border-border/50">
                   <Command className="h-3 w-3 text-muted-foreground" />
                   <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Shortcuts Active</span>
                 </div>
                 
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" onClick={toggleMute} className="md:hidden">
-                      {settings.mute ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Toggle Sounds</TooltipContent>
-                </Tooltip>
-
                 {mounted && (
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -322,7 +357,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                </div>
                <div>
                  <p className="text-xs font-black uppercase text-accent">Strategic Tip</p>
-                 <p className="text-[10px] font-medium text-foreground">Use keyboard shortcuts (G, T, F, R) to navigate the command center with maximum velocity.</p>
+                 <p className="text-[10px] font-medium text-foreground">For a truly seamless experience, install Ascend to your device using the "Install App" button in the menu.</p>
                </div>
             </div>
           </div>
