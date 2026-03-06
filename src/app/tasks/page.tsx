@@ -25,6 +25,7 @@ export default function TasksPage() {
   const { tasks, goals, addTask, toggleTask, deleteTask, updateTask } = useAscend()
   const { toast } = useToast()
   const [newTitle, setNewTitle] = useState("")
+  const [newPriority, setNewPriority] = useState<PriorityType>("medium")
   const [selectedGoal, setSelectedGoal] = useState<string>("none")
   const [viewMode, setViewMode] = useState<"morning" | "evening" | "all">("all")
   const [editingTask, setEditingTask] = useState<Task | null>(null)
@@ -50,12 +51,14 @@ export default function TasksPage() {
       title: newTitle,
       date: today,
       goalId: selectedGoal === "none" ? undefined : selectedGoal,
-      timeOfDay: viewMode === "all" ? "any" : viewMode
+      timeOfDay: viewMode === "all" ? "any" : viewMode,
+      priority: newPriority
     })
     setNewTitle("")
+    setNewPriority("medium")
     toast({
       title: "Task Logged",
-      description: "Priority established for today's mission.",
+      description: `Priority ${newPriority} mission established.`,
     })
   }
 
@@ -191,6 +194,16 @@ export default function TasksPage() {
               />
               <LayoutGrid className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             </div>
+            <Select value={newPriority} onValueChange={(v) => setNewPriority(v as PriorityType)}>
+              <SelectTrigger className="w-full sm:w-40 h-11 md:h-12 bg-muted/30 border-none">
+                <SelectValue placeholder="Priority" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="high">High</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="low">Low</SelectItem>
+              </SelectContent>
+            </Select>
             <Select value={selectedGoal} onValueChange={setSelectedGoal}>
               <SelectTrigger className="w-full sm:w-64 h-11 md:h-12 bg-muted/30 border-none">
                 <SelectValue placeholder="Strategic Link" />
