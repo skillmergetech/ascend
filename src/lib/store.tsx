@@ -66,7 +66,8 @@ export interface Expense {
 }
 
 export interface FinanceData {
-  monthlyIncome: number
+  monthlyIncomes: Record<number, number> // index 0-11
+  monthlyIncome: number // Backwards compatibility for single global view
   currency: string
   allocations: {
     tithe: number
@@ -125,7 +126,7 @@ interface AscendStore {
   updateTask: (id: string, task: Partial<Task>) => void
   toggleTask: (id: string) => void
   deleteTask: (id: string) => void
-  setIncome: (income: number) => void
+  setIncome: (income: number, month?: number) => void
   addExpense: (expense: Omit<Expense, "id">) => void
   deleteExpense: (id: string) => void
   addReview: (review: Omit<Review, "id" | "date">) => void
@@ -136,6 +137,7 @@ interface AscendStore {
 }
 
 const DEFAULT_FINANCE: FinanceData = {
+  monthlyIncomes: {},
   monthlyIncome: 0,
   currency: "USD",
   allocations: {
@@ -190,7 +192,7 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
   const getNextLevelXp = (lvl: number) => lvl * 1000
 
   useEffect(() => {
-    const stored = localStorage.getItem("ascend_data_v6")
+    const stored = localStorage.getItem("ascend_data_v7")
     if (stored) {
       try {
         const parsed = JSON.parse(stored)
@@ -207,6 +209,7 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
         setFinance({
           ...DEFAULT_FINANCE,
           ...loadedFinance,
+          monthlyIncomes: loadedFinance.monthlyIncomes || {},
           allocations: {
             ...DEFAULT_FINANCE.allocations,
             ...(loadedFinance.allocations || {})
@@ -233,7 +236,7 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (hydrated) {
-      localStorage.setItem("ascend_data_v6", JSON.stringify({ 
+      localStorage.setItem("ascend_data_v7", JSON.stringify({ 
         user, goals, tasks, finance, reviews, momentum, streak, xp, level, achievements, settings 
       }))
     }
@@ -253,7 +256,7 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
   }
 
   const resetData = () => {
-    localStorage.removeItem("ascend_data_v6")
+    localStorage.removeItem("ascend_data_v7")
     window.location.reload()
   }
 
@@ -410,19 +413,29 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
     setTasks(prev => prev.filter(t => t.id !== id))
   }
 
-  const setIncome = (income: number) => {
-    setFinance(prev => ({
-      ...prev,
-      monthlyIncome: income,
-      allocations: {
-        tithe: income * 0.10,
-        savings: income * 0.30,
-        charity: income * 0.05,
-        investments: income * 0.20,
-        dailyNeeds: income * 0.25,
-        misc: income * 0.10,
+  const setIncome = (income: number, month?: number) => {
+    setFinance(prev => {
+      const newIncomes = { ...prev.monthlyIncomes }
+      if (month !== undefined) {
+        newIncomes[month] = income
       }
-    }))
+      
+      // If we are updating the "active" income, also update the global monthlyIncome and allocations
+      // For simplicity, allocations will follow the income provided here
+      return {
+        ...prev,
+        monthlyIncomes: newIncomes,
+        monthlyIncome: income, // This acts as the "active" income for immediate allocation view
+        allocations: {
+          tithe: income * 0.10,
+          savings: income * 0.30,
+          charity: income * 0.05,
+          investments: income * 0.20,
+          dailyNeeds: income * 0.25,
+          misc: income * 0.10,
+        }
+      }
+    })
   }
 
   const addExpense = (expenseData: Omit<Expense, "id">) => {

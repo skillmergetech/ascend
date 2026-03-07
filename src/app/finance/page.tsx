@@ -10,23 +10,40 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Progress } from "@/components/ui/progress"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useAscend } from "@/lib/store"
-import { Wallet, PieChart as PieChartIcon, Landmark, Heart, PiggyBank, Briefcase, Plus, Trash2, ArrowUpRight, TrendingUp, AlertTriangle, Coins } from "lucide-react"
-import { useState, useMemo } from "react"
+import { Wallet, PieChart as PieChartIcon, Landmark, Heart, PiggyBank, Briefcase, Plus, Trash2, ArrowUpRight, TrendingUp, AlertTriangle, Coins, Calendar } from "lucide-react"
+import { useState, useMemo, useEffect } from "react"
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from "recharts"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
+
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June", 
+  "July", "August", "September", "October", "November", "December"
+]
 
 export default function FinancePage() {
   const { finance, settings, setIncome, addExpense, deleteExpense } = useAscend()
   const { toast } = useToast()
   
+  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth())
   const [expenseAmount, setExpenseAmount] = useState("")
   const [expenseDesc, setExpenseDesc] = useState("")
   const [expenseCategory, setExpenseCategory] = useState("Daily Needs")
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false)
 
-  // Safe accessors for nested data
-  const allocations = finance?.allocations || { tithe: 0, savings: 0, charity: 0, investments: 0, dailyNeeds: 0, misc: 0 }
+  // Get specific monthly income from store
+  const currentMonthlyIncome = finance?.monthlyIncomes?.[selectedMonth] || 0
+
+  // Recalculate allocations based on selected month's income
+  const allocations = useMemo(() => ({
+    tithe: currentMonthlyIncome * 0.10,
+    savings: currentMonthlyIncome * 0.30,
+    charity: currentMonthlyIncome * 0.05,
+    investments: currentMonthlyIncome * 0.20,
+    dailyNeeds: currentMonthlyIncome * 0.25,
+    misc: currentMonthlyIncome * 0.10,
+  }), [currentMonthlyIncome])
+
   const expenses = finance?.expenses || []
 
   const currencySymbol = useMemo(() => {
@@ -94,10 +111,29 @@ export default function FinancePage() {
               Strategic wealth management through the 90/10 principle.
             </p>
           </div>
-          <div className="flex items-center gap-4">
-            <Card className="w-full md:w-64 border-primary shadow-xl shadow-primary/10 bg-card/50 backdrop-blur-md">
+          
+          <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
+            <Card className="w-full sm:w-48 border-none bg-muted/30 backdrop-blur-md">
+              <CardContent className="p-3 space-y-1">
+                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Target Period</Label>
+                <Select value={selectedMonth.toString()} onValueChange={(v) => setSelectedMonth(parseInt(v))}>
+                  <SelectTrigger className="border-none bg-transparent h-8 font-bold">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MONTHS.map((month, idx) => (
+                      <SelectItem key={idx} value={idx.toString()}>{month}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </CardContent>
+            </Card>
+
+            <Card className="w-full sm:w-64 border-primary shadow-xl shadow-primary/10 bg-card/50 backdrop-blur-md">
               <CardContent className="p-4 space-y-2">
-                <Label htmlFor="income" className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Monthly Fuel (Income)</Label>
+                <Label htmlFor="income" className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">
+                  Monthly Fuel ({MONTHS[selectedMonth]})
+                </Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-black text-lg">{currencySymbol}</span>
                   <Input 
@@ -105,8 +141,8 @@ export default function FinancePage() {
                     type="number" 
                     placeholder="0.00" 
                     className="pl-8 font-black text-xl border-none bg-primary/10 focus-visible:ring-primary rounded-xl h-12"
-                    value={finance?.monthlyIncome || ""}
-                    onChange={(e) => setIncome(Number(e.target.value))}
+                    value={currentMonthlyIncome || ""}
+                    onChange={(e) => setIncome(Number(e.target.value), selectedMonth)}
                   />
                 </div>
               </CardContent>
@@ -114,7 +150,7 @@ export default function FinancePage() {
             
             <Dialog open={isAddExpenseOpen} onOpenChange={setIsAddExpenseOpen}>
               <DialogTrigger asChild>
-                <Button className="h-20 w-20 rounded-3xl bg-accent hover:bg-accent/90 shadow-lg shadow-accent/20 flex flex-col items-center justify-center gap-1">
+                <Button className="h-20 w-full sm:w-20 rounded-3xl bg-accent hover:bg-accent/90 shadow-lg shadow-accent/20 flex flex-col items-center justify-center gap-1">
                   <Plus className="h-6 w-6" />
                   <span className="text-[10px] font-black uppercase tracking-tighter">Log</span>
                 </Button>
@@ -158,9 +194,9 @@ export default function FinancePage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg font-bold">
                   <PieChartIcon className="h-5 w-5 text-primary" />
-                  Real-Time Allocation
+                  Real-Time Allocation ({MONTHS[selectedMonth]})
                 </CardTitle>
-                <CardDescription>Visual breakdown of your strategic deployment.</CardDescription>
+                <CardDescription>Visual breakdown of your strategic deployment for the selected period.</CardDescription>
               </CardHeader>
               <CardContent className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
@@ -248,7 +284,7 @@ export default function FinancePage() {
                </div>
                <CardHeader>
                  <CardTitle className="text-2xl font-black italic uppercase">Wealth Trajectory</CardTitle>
-                 <CardDescription className="text-white/70">Savings & Investment compound projection.</CardDescription>
+                 <CardDescription className="text-white/70">Savings & Investment compound projection based on {MONTHS[selectedMonth]}.</CardDescription>
                </CardHeader>
                <CardContent className="space-y-6 pt-4">
                  <div className="grid grid-cols-1 gap-4">
