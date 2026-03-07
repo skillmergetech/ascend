@@ -1,3 +1,4 @@
+
 "use client"
 
 import { AppShell } from "@/components/layout/Shell"
@@ -10,8 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Progress } from "@/components/ui/progress"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useAscend } from "@/lib/store"
-import { Wallet, PieChart as PieChartIcon, Landmark, Heart, PiggyBank, Briefcase, Plus, Trash2, ArrowUpRight, TrendingUp, AlertTriangle, Coins, Calendar } from "lucide-react"
-import { useState, useMemo, useEffect } from "react"
+import { Wallet, PieChart as PieChartIcon, Landmark, Heart, PiggyBank, Briefcase, Plus, Trash2, ArrowUpRight, TrendingUp, AlertTriangle, Coins, Calendar, BarChart3 } from "lucide-react"
+import { useState, useMemo } from "react"
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from "recharts"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
@@ -25,6 +26,7 @@ export default function FinancePage() {
   const { finance, settings, setIncome, addExpense, deleteExpense } = useAscend()
   const { toast } = useToast()
   
+  const [viewMode, setViewMode] = useState<"monthly" | "annual">("monthly")
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth())
   const [expenseAmount, setExpenseAmount] = useState("")
   const [expenseDesc, setExpenseDesc] = useState("")
@@ -33,16 +35,21 @@ export default function FinancePage() {
 
   // Get specific monthly income from store
   const currentMonthlyIncome = finance?.monthlyIncomes?.[selectedMonth] || 0
+  const totalAnnualIncome = useMemo(() => 
+    Object.values(finance?.monthlyIncomes || {}).reduce((sum, val) => sum + val, 0)
+  , [finance?.monthlyIncomes])
 
-  // Recalculate allocations based on selected month's income
+  const activeIncome = viewMode === "monthly" ? currentMonthlyIncome : totalAnnualIncome
+
+  // Recalculate allocations based on active income
   const allocations = useMemo(() => ({
-    tithe: currentMonthlyIncome * 0.10,
-    savings: currentMonthlyIncome * 0.30,
-    charity: currentMonthlyIncome * 0.05,
-    investments: currentMonthlyIncome * 0.20,
-    dailyNeeds: currentMonthlyIncome * 0.25,
-    misc: currentMonthlyIncome * 0.10,
-  }), [currentMonthlyIncome])
+    tithe: activeIncome * 0.10,
+    savings: activeIncome * 0.30,
+    charity: activeIncome * 0.05,
+    investments: activeIncome * 0.20,
+    dailyNeeds: activeIncome * 0.25,
+    misc: activeIncome * 0.10,
+  }), [activeIncome])
 
   const expenses = finance?.expenses || []
 
@@ -73,7 +80,12 @@ export default function FinancePage() {
 
   const getExpensesByCategory = (category: string) => {
     return expenses
-      .filter(e => e.category === category)
+      .filter(e => {
+        const categoryMatch = e.category === category
+        if (viewMode === "annual") return categoryMatch
+        const date = new Date(e.date)
+        return categoryMatch && date.getMonth() === selectedMonth
+      })
       .reduce((sum, e) => sum + e.amount, 0)
   }
 
@@ -92,13 +104,16 @@ export default function FinancePage() {
   }
 
   const savingsProjection = useMemo(() => {
-    const monthlyRate = (allocations.savings || 0) + (allocations.investments || 0)
+    const monthlyRate = viewMode === "monthly" 
+      ? (allocations.savings || 0) + (allocations.investments || 0)
+      : ((allocations.savings || 0) + (allocations.investments || 0)) / 12
+    
     return {
       oneYear: monthlyRate * 12,
       fiveYears: monthlyRate * 60,
       tenYears: monthlyRate * 120
     }
-  }, [allocations])
+  }, [allocations, viewMode])
 
   return (
     <AppShell>
@@ -106,42 +121,65 @@ export default function FinancePage() {
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-1">
             <h1 className="text-4xl font-black font-headline text-foreground italic uppercase tracking-tighter">Financial Fortress</h1>
-            <p className="text-muted-foreground font-medium flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-accent" />
-              Strategic wealth management through the 90/10 principle.
-            </p>
+            <div className="flex items-center gap-4">
+              <p className="text-muted-foreground font-medium flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-accent" />
+                Strategic wealth management.
+              </p>
+              <div className="flex bg-muted/50 p-1 rounded-lg">
+                <Button 
+                  variant={viewMode === "monthly" ? "secondary" : "ghost"} 
+                  size="sm" 
+                  onClick={() => setViewMode("monthly")}
+                  className="text-[10px] font-black uppercase h-7 px-3"
+                >
+                  Monthly
+                </Button>
+                <Button 
+                  variant={viewMode === "annual" ? "secondary" : "ghost"} 
+                  size="sm" 
+                  onClick={() => setViewMode("annual")}
+                  className="text-[10px] font-black uppercase h-7 px-3"
+                >
+                  Annual
+                </Button>
+              </div>
+            </div>
           </div>
           
           <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
-            <Card className="w-full sm:w-48 border-none bg-muted/30 backdrop-blur-md">
-              <CardContent className="p-3 space-y-1">
-                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Target Period</Label>
-                <Select value={selectedMonth.toString()} onValueChange={(v) => setSelectedMonth(parseInt(v))}>
-                  <SelectTrigger className="border-none bg-transparent h-8 font-bold">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {MONTHS.map((month, idx) => (
-                      <SelectItem key={idx} value={idx.toString()}>{month}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </CardContent>
-            </Card>
+            {viewMode === "monthly" && (
+              <Card className="w-full sm:w-48 border-none bg-muted/30 backdrop-blur-md">
+                <CardContent className="p-3 space-y-1">
+                  <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Target Period</Label>
+                  <Select value={selectedMonth.toString()} onValueChange={(v) => setSelectedMonth(parseInt(v))}>
+                    <SelectTrigger className="border-none bg-transparent h-8 font-bold">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {MONTHS.map((month, idx) => (
+                        <SelectItem key={idx} value={idx.toString()}>{month}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </CardContent>
+              </Card>
+            )}
 
             <Card className="w-full sm:w-64 border-primary shadow-xl shadow-primary/10 bg-card/50 backdrop-blur-md">
               <CardContent className="p-4 space-y-2">
                 <Label htmlFor="income" className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">
-                  Monthly Fuel ({MONTHS[selectedMonth]})
+                  {viewMode === "monthly" ? `Monthly Fuel (${MONTHS[selectedMonth]})` : "Annual Total Fuel"}
                 </Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-black text-lg">{currencySymbol}</span>
                   <Input 
                     id="income" 
                     type="number" 
+                    disabled={viewMode === "annual"}
                     placeholder="0.00" 
-                    className="pl-8 font-black text-xl border-none bg-primary/10 focus-visible:ring-primary rounded-xl h-12"
-                    value={currentMonthlyIncome || ""}
+                    className="pl-8 font-black text-xl border-none bg-primary/10 focus-visible:ring-primary rounded-xl h-12 disabled:opacity-100"
+                    value={activeIncome || ""}
                     onChange={(e) => setIncome(Number(e.target.value), selectedMonth)}
                   />
                 </div>
@@ -194,9 +232,9 @@ export default function FinancePage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg font-bold">
                   <PieChartIcon className="h-5 w-5 text-primary" />
-                  Real-Time Allocation ({MONTHS[selectedMonth]})
+                  {viewMode === "monthly" ? `Real-Time Allocation (${MONTHS[selectedMonth]})` : "Strategic Annual Allocation"}
                 </CardTitle>
-                <CardDescription>Visual breakdown of your strategic deployment for the selected period.</CardDescription>
+                <CardDescription>Visual breakdown of your strategic deployment for the {viewMode} period.</CardDescription>
               </CardHeader>
               <CardContent className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
@@ -284,7 +322,12 @@ export default function FinancePage() {
                </div>
                <CardHeader>
                  <CardTitle className="text-2xl font-black italic uppercase">Wealth Trajectory</CardTitle>
-                 <CardDescription className="text-white/70">Savings & Investment compound projection based on {MONTHS[selectedMonth]}.</CardDescription>
+                 <CardDescription className="text-white/70">
+                    {viewMode === "monthly" 
+                      ? `Projection based on ${MONTHS[selectedMonth]}.`
+                      : "Projection based on average annual velocity."
+                    }
+                 </CardDescription>
                </CardHeader>
                <CardContent className="space-y-6 pt-4">
                  <div className="grid grid-cols-1 gap-4">
@@ -298,7 +341,7 @@ export default function FinancePage() {
                        <h3 className="text-3xl font-black">{currencySymbol}{proj.value.toLocaleString()}</h3>
                        <div className="mt-2 flex items-center gap-1 text-[10px] font-bold text-white/50">
                          <ArrowUpRight className="h-3 w-3" />
-                         Based on current {currencySymbol}{((allocations.savings || 0) + (allocations.investments || 0)).toLocaleString()}/mo rate
+                         Based on current rate
                        </div>
                      </div>
                    ))}
@@ -310,7 +353,9 @@ export default function FinancePage() {
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
                   <CardTitle className="text-lg font-bold">Execution History</CardTitle>
-                  <CardDescription>Recent financial maneuvers.</CardDescription>
+                  <CardDescription>
+                    {viewMode === "monthly" ? `Recent transactions in ${MONTHS[selectedMonth]}.` : "Recent global transactions."}
+                  </CardDescription>
                 </div>
                 <Coins className="h-5 w-5 text-accent" />
               </CardHeader>
@@ -326,31 +371,49 @@ export default function FinancePage() {
                     </TableHeader>
                     <TableBody>
                       {expenses.length > 0 ? (
-                        expenses.slice().reverse().slice(0, 8).map((expense) => (
-                          <TableRow key={expense.id} className="hover:bg-muted/30">
-                            <TableCell>
-                              <p className="font-bold text-sm">{expense.description}</p>
-                              <span className="text-[10px] font-black uppercase text-muted-foreground">{expense.category}</span>
-                            </TableCell>
-                            <TableCell className="text-right font-black text-foreground">
-                              -{currencySymbol}{expense.amount.toLocaleString()}
-                            </TableCell>
-                            <TableCell>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                                onClick={() => deleteExpense(expense.id)}
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))
+                        expenses
+                          .filter(e => {
+                            if (viewMode === "annual") return true
+                            return new Date(e.date).getMonth() === selectedMonth
+                          })
+                          .slice()
+                          .reverse()
+                          .slice(0, 8)
+                          .map((expense) => (
+                            <TableRow key={expense.id} className="hover:bg-muted/30">
+                              <TableCell>
+                                <p className="font-bold text-sm">{expense.description}</p>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[10px] font-black uppercase text-muted-foreground">{expense.category}</span>
+                                  <span className="text-[9px] text-muted-foreground/60">{expense.date}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right font-black text-foreground">
+                                -{currencySymbol}{expense.amount.toLocaleString()}
+                              </TableCell>
+                              <TableCell>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                  onClick={() => deleteExpense(expense.id)}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))
                       ) : (
                         <TableRow>
                           <TableCell colSpan={3} className="text-center py-10 text-muted-foreground text-xs italic">
                             No transaction data logged.
+                          </TableCell>
+                        </TableRow>
+                      )}
+                      {viewMode === "monthly" && expenses.filter(e => new Date(e.date).getMonth() === selectedMonth).length === 0 && expenses.length > 0 && (
+                        <TableRow>
+                          <TableCell colSpan={3} className="text-center py-10 text-muted-foreground text-xs italic">
+                            No transactions for {MONTHS[selectedMonth]}.
                           </TableCell>
                         </TableRow>
                       )}
