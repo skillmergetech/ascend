@@ -1,24 +1,28 @@
-
 "use client"
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { useAuth, useUser } from "@/firebase"
-import { initiateEmailSignIn } from "@/firebase/non-blocking-login"
+import { initiateEmailSignIn, initiatePasswordReset } from "@/firebase/non-blocking-login"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { TrendingUp, Loader2, Mail, Lock, ChevronRight, AlertCircle } from "lucide-react"
+import { TrendingUp, Loader2, Mail, Lock, ChevronRight, AlertCircle, HelpCircle } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [resetEmail, setResetEmail] = useState("")
   const [loading, setLoading] = useState(false)
+  const [resetLoading, setResetLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isResetOpen, setIsResetOpen] = useState(false)
+  
   const auth = useAuth()
   const { user, isUserLoading } = useUser()
   const router = useRouter()
@@ -37,7 +41,6 @@ export default function LoginPage() {
 
     try {
       initiateEmailSignIn(auth, email, password)
-      // Login success is handled by the useUser hook's effect redirecting to "/"
       toast({
         title: "Authorization Initiated",
         description: "Checking operational credentials...",
@@ -45,6 +48,36 @@ export default function LoginPage() {
     } catch (err: any) {
       setError(err.message || "Failed to authorize session.")
       setLoading(false)
+    }
+  }
+
+  const handlePasswordReset = async () => {
+    if (!resetEmail) {
+      toast({
+        variant: "destructive",
+        title: "Email Required",
+        description: "Please provide your operational email to receive a reset link.",
+      })
+      return
+    }
+
+    setResetLoading(true)
+    try {
+      await initiatePasswordReset(auth, resetEmail)
+      toast({
+        title: "Reset Link Dispatched",
+        description: `Check ${resetEmail} for your security recovery link.`,
+      })
+      setIsResetOpen(false)
+      setResetEmail("")
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "Reset Failed",
+        description: err.message || "Could not process password recovery.",
+      })
+    } finally {
+      setResetLoading(false)
     }
   }
 
@@ -99,6 +132,42 @@ export default function LoginPage() {
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <Label htmlFor="password">Security Key</Label>
+                  <Dialog open={isResetOpen} onOpenChange={setIsResetOpen}>
+                    <DialogTrigger asChild>
+                      <button type="button" className="text-[10px] font-black uppercase text-primary hover:underline flex items-center gap-1">
+                        <HelpCircle className="h-3 w-3" />
+                        Forgot?
+                      </button>
+                    </DialogTrigger>
+                    <DialogContent className="bg-card/95 backdrop-blur-2xl border-none shadow-2xl">
+                      <DialogHeader>
+                        <DialogTitle className="text-2xl font-black">Credential Recovery</DialogTitle>
+                        <DialogDescription>
+                          Enter your operational email and we will dispatch a secure reset link to your station.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="py-4">
+                        <Label htmlFor="reset-email" className="text-xs font-black uppercase text-muted-foreground">Recovery Email</Label>
+                        <Input 
+                          id="reset-email"
+                          type="email"
+                          placeholder="name@agency.com"
+                          className="mt-2 h-12 bg-muted/20 border-none font-bold"
+                          value={resetEmail}
+                          onChange={(e) => setResetEmail(e.target.value)}
+                        />
+                      </div>
+                      <DialogFooter>
+                        <Button 
+                          onClick={handlePasswordReset} 
+                          disabled={resetLoading}
+                          className="w-full h-12 bg-primary font-black uppercase tracking-widest text-xs"
+                        >
+                          {resetLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Dispatch Reset Link"}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                 </div>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
