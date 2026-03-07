@@ -6,6 +6,7 @@ import { Home, Target, CheckSquare, Wallet, Sparkles, LogOut, TrendingUp, Zap, T
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useAscend } from "@/lib/store"
+import { useUser, useAuth } from "@/firebase"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -14,6 +15,7 @@ import { cn } from "@/lib/utils"
 import { useEffect, useState, useRef } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { useTheme } from "next-themes"
+import { signOut } from "firebase/auth"
 
 const items = [
   { title: "Dashboard", url: "/", icon: Home, shortcut: "D" },
@@ -39,6 +41,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const { theme, setTheme } = useTheme()
+  const auth = useAuth()
+  const { user: fbUser, isUserLoading } = useUser()
   const { momentum, level, xp, streak, settings, toggleMute, user, completeOnboarding, tasks } = useAscend()
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [mounted, setMounted] = useState(false)
@@ -48,23 +52,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const nextLevelXp = level * 1000
   const xpProgress = (xp / nextLevelXp) * 100
 
+  // Auth Guard
+  useEffect(() => {
+    if (!isUserLoading && !fbUser && pathname !== "/login" && pathname !== "/signup") {
+      router.push("/login")
+    }
+  }, [fbUser, isUserLoading, pathname, router])
+
   // PWA Install Prompt Logic
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: any) => {
       e.preventDefault()
       setDeferredPrompt(e)
     }
-
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
-    
-    // Register Service Worker for PWA compliance
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(err => {
-        // Silently fail as sw.js might not exist yet, 
-        // but the registration call is needed for installability checks
-      })
-    }
-
     return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
   }, [])
 
@@ -80,54 +81,40 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // Notification Logic
   useEffect(() => {
     if (!mounted || !settings.notifications) return
-
     if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission()
     }
-
     const checkTasks = () => {
       const now = new Date()
       const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`
       const today = now.toISOString().split('T')[0]
-
       tasks.forEach(task => {
-        if (
-          task.date === today && 
-          task.startTime === currentTime && 
-          !task.completed && 
-          !notifiedTasks.current.has(task.id)
-        ) {
+        if (task.date === today && task.startTime === currentTime && !task.completed && !notifiedTasks.current.has(task.id)) {
           if ("Notification" in window && Notification.permission === "granted") {
             new Notification("Mission Start", {
               body: `Deployment ready: ${task.title}`,
-              icon: "/favicon.ico" // Placeholder
+              icon: "/favicon.ico"
             })
             notifiedTasks.current.add(task.id)
           }
         }
       })
-
-      if (now.getHours() === 0 && now.getMinutes() === 0) {
-        notifiedTasks.current.clear()
-      }
     }
-
     const interval = setInterval(checkTasks, 10000)
     return () => clearInterval(interval)
   }, [mounted, settings.notifications, tasks])
 
   useEffect(() => {
     setMounted(true)
-    if (user.onboardingCompleted === false) {
+    if (user.onboardingCompleted === false && fbUser) {
       const timer = setTimeout(() => setShowOnboarding(true), 1000)
       return () => clearTimeout(timer)
     }
-  }, [user.onboardingCompleted])
+  }, [user.onboardingCompleted, fbUser])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
-      
       const key = e.key.toUpperCase()
       const item = items.find(i => i.shortcut === key)
       if (item) {
@@ -138,6 +125,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [router])
+
+  const handleSignOut = () => {
+    signOut(auth).then(() => {
+      router.push("/login")
+    })
+  }
+
+  if (isUserLoading) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-background">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  // Don't render shell for auth pages
+  if (pathname === "/login" || pathname === "/signup") {
+    return <>{children}</>
+  }
 
   return (
     <SidebarProvider>
@@ -165,25 +171,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </div>
               
               <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="space-y-2 cursor-help">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="h-8 w-8 rounded-full bg-gold flex items-center justify-center text-background font-black text-xs shadow-gold">
-                            {level}
-                          </div>
-                          <span className="text-xs font-black uppercase text-foreground">Exp Progress</span>
-                        </div>
-                        <span className="text-[10px] font-bold text-muted-foreground">{xp} / {nextLevelXp} XP</span>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 w-8 rounded-full bg-gold flex items-center justify-center text-background font-black text-xs shadow-gold">
+                        {level}
                       </div>
-                      <Progress value={xpProgress} className="h-1.5" />
+                      <span className="text-xs font-black uppercase text-foreground">Exp Progress</span>
                     </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">
-                    Gain XP by completing tasks and goals to level up.
-                  </TooltipContent>
-                </Tooltip>
+                    <span className="text-[10px] font-bold text-muted-foreground">{xp} / {nextLevelXp} XP</span>
+                  </div>
+                  <Progress value={xpProgress} className="h-1.5" />
+                </div>
               </TooltipProvider>
             </div>
 
@@ -204,38 +203,29 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}
+                  <SidebarMenuItem>
+                    <SidebarMenuButton onClick={handleSignOut} className="px-4 py-6 rounded-xl transition-all duration-200 hover:bg-destructive/10 text-muted-foreground hover:text-destructive group">
+                      <div className="flex items-center gap-4">
+                        <LogOut className="h-5 w-5" />
+                        <span className="text-sm font-bold uppercase tracking-tight">Deauthorize</span>
+                      </div>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
           </SidebarContent>
           <SidebarFooter className="p-4 space-y-4">
-            {deferredPrompt && (
-              <Button 
-                onClick={handleInstallClick}
-                className="w-full bg-accent hover:bg-accent/90 text-white font-black uppercase text-[10px] tracking-widest py-6 rounded-xl shadow-lg shadow-accent/20"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Install App
-              </Button>
-            )}
             <div className="flex items-center justify-between px-2">
                <div className="flex items-center gap-2">
                  <Flame className="h-5 w-5 text-orange-500 fill-orange-500/20" />
                  <span className="text-sm font-black text-foreground">{streak} Day Streak</span>
                </div>
-               <TooltipProvider>
-                 <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" onClick={toggleMute} className="h-8 w-8 opacity-50 hover:opacity-100">
-                        {settings.mute ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Toggle system sounds</TooltipContent>
-                 </Tooltip>
-               </TooltipProvider>
+               <Button variant="ghost" size="icon" onClick={toggleMute} className="h-8 w-8 opacity-50 hover:opacity-100">
+                  {settings.mute ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+               </Button>
             </div>
             <div className="rounded-2xl ascend-gradient p-4 shadow-xl shadow-primary/20 relative overflow-hidden group">
-              <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
               <p className="text-[10px] font-black text-white/70 uppercase tracking-widest mb-1">Momentum Core</p>
               <div className="flex items-center justify-between text-white">
                 <span className="text-xl font-black">{momentum}<span className="text-sm opacity-60">/100</span></span>
@@ -261,7 +251,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           ))}
           <SidebarTrigger className="flex flex-col items-center gap-1 p-2 min-w-[64px] min-h-[64px] justify-center text-muted-foreground">
             <Menu className="h-6 w-6" />
-            <span className="text-[10px] font-black uppercase tracking-tighter">More</span>
           </SidebarTrigger>
         </nav>
 
@@ -273,10 +262,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </div>
               <div>
                 <h1 className="text-2xl md:text-3xl font-black text-foreground font-headline flex items-center gap-2">
-                  {user.name.split(' ')[0]}
+                  {fbUser?.displayName || user.name.split(' ')[0]}
                   <div className="h-2 w-2 rounded-full bg-accent animate-pulse" />
                 </h1>
-                <p className="text-muted-foreground text-[10px] md:text-xs font-bold uppercase tracking-[0.2em]">Deployment: Active</p>
+                <p className="text-muted-foreground text-[10px] md:text-xs font-bold uppercase tracking-[0.2em]">Deployment: {fbUser ? "Cloud Synchronized" : "Local Only"}</p>
               </div>
             </div>
             <div className="flex items-center gap-4">
@@ -289,32 +278,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   Install App
                 </Button>
               )}
-              <TooltipProvider>
-                <div className="hidden lg:flex items-center gap-2 mr-4 bg-muted/20 px-3 py-1.5 rounded-full border border-border/50">
-                  <Command className="h-3 w-3 text-muted-foreground" />
-                  <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Shortcuts Active</span>
-                </div>
-                
-                {mounted && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button 
-                        variant="outline" 
-                        size="icon" 
-                        onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                        className="h-10 w-10 md:h-11 md:w-11 rounded-full border border-border bg-card flex items-center justify-center group cursor-pointer hover:border-accent transition-colors shadow-sm"
-                      >
-                        {theme === 'dark' ? (
-                          <Sun className="h-5 w-5 text-primary group-hover:text-accent transition-colors" />
-                        ) : (
-                          <Moon className="h-5 w-5 text-primary group-hover:text-accent transition-colors" />
-                        )}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Switch to {theme === 'dark' ? 'Light' : 'Dark'} Mode</TooltipContent>
-                  </Tooltip>
-                )}
-              </TooltipProvider>
+              {mounted && (
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                  className="h-10 w-10 md:h-11 md:w-11 rounded-full border border-border bg-card flex items-center justify-center group cursor-pointer hover:border-accent transition-colors shadow-sm"
+                >
+                  {theme === 'dark' ? (
+                    <Sun className="h-5 w-5 text-primary group-hover:text-accent transition-colors" />
+                  ) : (
+                    <Moon className="h-5 w-5 text-primary group-hover:text-accent transition-colors" />
+                  )}
+                </Button>
+              )}
             </div>
           </header>
           <div className="max-w-7xl mx-auto">
@@ -323,7 +300,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </main>
       </div>
 
-      {/* Onboarding Flow */}
       <Dialog open={showOnboarding} onOpenChange={setShowOnboarding}>
         <DialogContent className="bg-card/95 backdrop-blur-2xl border-none shadow-2xl max-w-lg">
           <DialogHeader>
@@ -332,15 +308,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
             <DialogTitle className="text-3xl font-black text-center italic uppercase tracking-tighter">Initialize Ascent</DialogTitle>
             <DialogDescription className="text-center text-base leading-relaxed pt-2">
-              Welcome to the elite command center for high achievers. Ascend is built to synchronize your micro-actions with your macro-vision.
+              Welcome to the elite command center for high achievers. Your records are now synchronized across all your tactical devices.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-6 py-4">
             <div className="grid grid-cols-3 gap-4">
                {[
-                 { label: "Vision", desc: "Hierarchy", icon: Target },
+                 { label: "Vision", desc: "Cloud Sync", icon: Target },
                  { label: "Execution", desc: "Missions", icon: CheckSquare },
-                 { label: "Analysis", desc: "Metrics", icon: BarChart3 }
+                 { label: "Analysis", desc: "Global", icon: BarChart3 }
                ].map((mod, i) => (
                  <div key={i} className="text-center space-y-2 p-3 rounded-2xl bg-muted/20 border border-border/50">
                     <mod.icon className="h-6 w-6 mx-auto text-primary" />
@@ -350,15 +326,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     </div>
                  </div>
                ))}
-            </div>
-            <div className="p-4 rounded-2xl bg-accent/10 border border-accent/20 flex gap-4 items-center">
-               <div className="h-10 w-10 rounded-xl bg-accent flex items-center justify-center text-white shrink-0">
-                 <Zap className="h-6 w-6" />
-               </div>
-               <div>
-                 <p className="text-xs font-black uppercase text-accent">Strategic Tip</p>
-                 <p className="text-[10px] font-medium text-foreground">For a truly seamless experience, install Ascend to your device using the "Install App" button in the menu.</p>
-               </div>
             </div>
           </div>
           <DialogFooter>

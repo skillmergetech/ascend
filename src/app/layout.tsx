@@ -4,6 +4,7 @@ import './globals.css';
 import { AscendProvider } from '@/lib/store';
 import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from "next-themes"
+import { FirebaseClientProvider } from '@/firebase/client-provider';
 
 export const metadata: Metadata = {
   title: 'Ascend | Self-Development & Life Management',
@@ -41,10 +42,12 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased selection:bg-primary selection:text-primary-foreground">
         <ThemeProvider attribute="class" defaultTheme="dark">
-          <AscendProvider>
-            {children}
-            <Toaster />
-          </AscendProvider>
+          <FirebaseClientProvider>
+            <AscendProvider>
+              {children}
+              <Toaster />
+            </AscendProvider>
+          </FirebaseClientProvider>
         </ThemeProvider>
       </body>
     </html>

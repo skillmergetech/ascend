@@ -1,3 +1,4 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -8,69 +9,30 @@ service cloud.firestore {
      * Core Philosophy: 
      * This ruleset enforces a strict user-ownership model. Every piece of data is 
      * logically and physically tied to a specific user via the Firestore path.
-     *
-     * Data Structure:
-     * All user-related data (profiles, goals, tasks, financial configs) is nested 
-     * under the path /users/{userId}.
-     *
-     * Key Security Decisions:
-     * 1. Authorization Independence: Ownership is determined by the path variable {userId} 
-     *    matching the authenticated user's UID (request.auth.uid). This eliminates 
-     *    expensive cross-document lookups (get() calls) for authorization.
-     * 2. Strict Privacy: There is no public listing or reading of other users' data. 
-     *    All read/write operations require an authenticated session matching the path.
-     * 3. Relational Integrity: On creation and update, the rules ensure that internal 
-     *    document fields (like userId or id) remain consistent with the URL path.
-     * 4. Prototyping Flexibility: While authorization is strict, the specific schema 
-     *    (fields like 'description' or 'momentumScore') is not enforced to allow 
-     *    for rapid UI iteration.
      */
 
     // --- Helper Functions ---
 
-    /**
-     * @description Checks if the request is from an authenticated user.
-     */
     function isSignedIn() {
       return request.auth != null;
     }
 
-    /**
-     * @description Checks if the authenticated user's UID matches the provided userId.
-     */
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    /**
-     * @description Combines ownership check with document existence for updates and deletes.
-     */
     function isExistingOwner(userId) {
       return resource != null && isOwner(userId);
     }
 
     // --- Collection Rules ---
 
-    /**
-     * @description Rules for the UserProfile entity. Maps 1:1 with Firebase Auth users.
-     * @path /users/{userId}
-     * @allow (create) if auth.uid == 'user123' and data.id == 'user123'
-     * @deny (read) if auth.uid != userId
-     * @principle Enforces self-creation and absolute ownership based on auth UID.
-     */
     match /users/{userId} {
       allow get, list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
 
-      /**
-       * @description Rules for Goal entities. Nested subcollection under a specific user.
-       * @path /users/{userId}/goals/{goalId}
-       * @allow (list) if auth.uid == userId
-       * @deny (create) if request.resource.data.userId != userId
-       * @principle Path-based authorization with denormalized ownership field validation.
-       */
       match /goals/{goalId} {
         allow get, list: if isOwner(userId);
         allow create: if isOwner(userId) && request.resource.data.userId == userId;
@@ -78,13 +40,6 @@ service cloud.firestore {
         allow delete: if isExistingOwner(userId);
       }
 
-      /**
-       * @description Rules for Task entities. Daily actions linked to the user's workflow.
-       * @path /users/{userId}/tasks/{taskId}
-       * @allow (get) if auth.uid == userId
-       * @deny (update) if attempting to change the userId field
-       * @principle Ensures tasks remain associated with the correct owner via immutability.
-       */
       match /tasks/{taskId} {
         allow get, list: if isOwner(userId);
         allow create: if isOwner(userId) && request.resource.data.userId == userId;
@@ -92,13 +47,13 @@ service cloud.firestore {
         allow delete: if isExistingOwner(userId);
       }
 
-      /**
-       * @description Rules for FinancialConfiguration. A 1:1 singleton document per user.
-       * @path /users/{userId}/financialConfiguration/current
-       * @allow (update) if auth.uid == userId and document exists
-       * @deny (create) if auth.uid != userId
-       * @principle Restricted access to private financial data using a fixed-ID singleton pattern.
-       */
+      match /reviews/{reviewId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.userId == userId;
+        allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+        allow delete: if isExistingOwner(userId);
+      }
+
       match /financialConfiguration/current {
         allow get, list: if isOwner(userId);
         allow create: if isOwner(userId) && request.resource.data.userId == userId;
