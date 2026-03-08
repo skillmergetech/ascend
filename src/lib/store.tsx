@@ -22,6 +22,10 @@ export interface UserProfile {
   onboardingCompleted: boolean
   momentumScore?: number
   achievementStreak?: number
+  currency?: string
+  mute?: boolean
+  notifications?: boolean
+  reminderTime?: string
 }
 
 export interface Achievement {
@@ -182,7 +186,11 @@ const INITIAL_USER: UserProfile = {
   name: "New Achiever",
   avatar: "https://picsum.photos/seed/user/200/200",
   joinDate: new Date().toISOString().split('T')[0],
-  onboardingCompleted: false
+  onboardingCompleted: false,
+  currency: "USD",
+  mute: false,
+  notifications: true,
+  reminderTime: "08:00"
 }
 
 const INITIAL_ACHIEVEMENTS: Achievement[] = [
@@ -267,6 +275,15 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
       setUser(prev => ({ ...prev, ...fbProfile }));
       if (fbProfile.momentumScore !== undefined) setMomentum(fbProfile.momentumScore);
       if (fbProfile.achievementStreak !== undefined) setStreak(fbProfile.achievementStreak);
+      
+      // Load settings from profile
+      setSettings(prev => ({
+        ...prev,
+        currency: fbProfile.currency || prev.currency,
+        mute: fbProfile.mute !== undefined ? fbProfile.mute : prev.mute,
+        notifications: fbProfile.notifications !== undefined ? fbProfile.notifications : prev.notifications,
+        reminderTime: fbProfile.reminderTime || prev.reminderTime
+      }));
     }
   }, [fbProfile]);
   useEffect(() => { if (fbReviews) setReviews(fbReviews); }, [fbReviews]);
@@ -319,6 +336,10 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
 
   const updateSettings = (update: Partial<AscendStore["settings"]>) => {
     setSettings(prev => ({ ...prev, ...update }))
+    // If logged in, persist these to the user profile document
+    if (fbUser && profileDocRef) {
+      updateDocumentNonBlocking(profileDocRef, sanitize({ ...update, updatedAt: new Date().toISOString() }));
+    }
   }
 
   const resetData = () => {
@@ -531,7 +552,7 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
   }
 
   const toggleMute = () => {
-    setSettings(prev => ({ ...prev, mute: !prev.mute }))
+    updateSettings({ mute: !settings.mute })
   }
 
   if (!hydrated || isAuthLoading) return null;

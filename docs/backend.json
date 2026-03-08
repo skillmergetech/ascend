@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "User": {
@@ -58,6 +59,22 @@
         "achievementStreak": {
           "type": "number",
           "description": "The number of consecutive days or periods a user has achieved a goal or completed tasks."
+        },
+        "currency": {
+          "type": "string",
+          "description": "The user's preferred currency code (e.g., USD, EUR, NGN)."
+        },
+        "mute": {
+          "type": "boolean",
+          "description": "Whether audio feedback is disabled."
+        },
+        "notifications": {
+          "type": "boolean",
+          "description": "Whether mission notifications are enabled."
+        },
+        "reminderTime": {
+          "type": "string",
+          "description": "The daily time for mission cycle reminders."
         },
         "lastLoginDate": {
           "type": "string",
