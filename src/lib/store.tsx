@@ -8,7 +8,6 @@ import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase } from "@
 import { doc, collection, onSnapshot, query, orderBy } from "firebase/firestore"
 import { 
   setDocumentNonBlocking, 
-  addDocumentNonBlocking, 
   updateDocumentNonBlocking, 
   deleteDocumentNonBlocking 
 } from "@/firebase/non-blocking-updates"
@@ -194,13 +193,23 @@ const INITIAL_ACHIEVEMENTS: Achievement[] = [
   { id: "quarterly_1", title: "Visionary", description: "Reach your first quarterly milestone.", icon: "Target", category: "vision" },
 ]
 
+// Helper to remove undefined fields for Firestore compatibility
+const sanitize = (obj: any) => {
+  const result = { ...obj };
+  Object.keys(result).forEach(key => {
+    if (result[key] === undefined) {
+      delete result[key];
+    }
+  });
+  return result;
+};
+
 const AscendContext = createContext<AscendStore | undefined>(undefined)
 
 export function AscendProvider({ children }: { children: React.ReactNode }) {
   const { user: fbUser, isUserLoading: isAuthLoading } = useUser()
   const db = useFirestore()
 
-  // Local State
   const [user, setUser] = useState<UserProfile>(INITIAL_USER)
   const [goals, setGoals] = useState<Goal[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
@@ -219,7 +228,6 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
   })
   const [hydrated, setHydrated] = useState(false)
 
-  // Firestore Sync Queries
   const goalsQuery = useMemoFirebase(() => {
     if (!db || !fbUser) return null;
     return collection(db, "users", fbUser.uid, "goals");
@@ -245,26 +253,15 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
     return collection(db, "users", fbUser.uid, "reviews");
   }, [db, fbUser]);
 
-  // Firestore Hooks (Read)
   const { data: fbGoals } = useCollection<Goal>(goalsQuery as any);
   const { data: fbTasks } = useCollection<Task>(tasksQuery as any);
   const { data: fbFinance } = useDoc<FinanceData>(financeDocRef as any);
   const { data: fbProfile } = useDoc<UserProfile>(profileDocRef as any);
   const { data: fbReviews } = useCollection<Review>(reviewsQuery as any);
 
-  // Sync Firestore to State
-  useEffect(() => {
-    if (fbGoals) setGoals(fbGoals);
-  }, [fbGoals]);
-
-  useEffect(() => {
-    if (fbTasks) setTasks(fbTasks);
-  }, [fbTasks]);
-
-  useEffect(() => {
-    if (fbFinance) setFinance(fbFinance);
-  }, [fbFinance]);
-
+  useEffect(() => { if (fbGoals) setGoals(fbGoals); }, [fbGoals]);
+  useEffect(() => { if (fbTasks) setTasks(fbTasks); }, [fbTasks]);
+  useEffect(() => { if (fbFinance) setFinance(fbFinance); }, [fbFinance]);
   useEffect(() => {
     if (fbProfile) {
       setUser(prev => ({ ...prev, ...fbProfile }));
@@ -272,12 +269,8 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
       if (fbProfile.achievementStreak !== undefined) setStreak(fbProfile.achievementStreak);
     }
   }, [fbProfile]);
+  useEffect(() => { if (fbReviews) setReviews(fbReviews); }, [fbReviews]);
 
-  useEffect(() => {
-    if (fbReviews) setReviews(fbReviews);
-  }, [fbReviews]);
-
-  // Local Storage Hydration (as fallback/initial)
   useEffect(() => {
     const stored = localStorage.getItem("ascend_data_v8")
     if (stored && !fbUser) {
@@ -315,7 +308,7 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
     const newUser = { ...user, ...update };
     setUser(newUser);
     if (fbUser && profileDocRef) {
-      setDocumentNonBlocking(profileDocRef, { ...newUser, id: fbUser.uid, userId: fbUser.uid, updatedAt: new Date().toISOString() }, { merge: true });
+      setDocumentNonBlocking(profileDocRef, sanitize({ ...newUser, id: fbUser.uid, userId: fbUser.uid, updatedAt: new Date().toISOString() }), { merge: true });
     }
   }
 
@@ -383,7 +376,7 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
     }
     if (fbUser && db) {
       const gRef = doc(db, "users", fbUser.uid, "goals", id);
-      setDocumentNonBlocking(gRef, newGoal, { merge: true });
+      setDocumentNonBlocking(gRef, sanitize(newGoal), { merge: true });
     } else {
       setGoals(prev => [...prev, newGoal]);
     }
@@ -393,7 +386,7 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
   const updateGoal = (id: string, goalUpdate: Partial<Goal>) => {
     if (fbUser && db) {
       const gRef = doc(db, "users", fbUser.uid, "goals", id);
-      updateDocumentNonBlocking(gRef, { ...goalUpdate, updatedAt: new Date().toISOString() });
+      updateDocumentNonBlocking(gRef, sanitize({ ...goalUpdate, updatedAt: new Date().toISOString() }));
     } else {
       setGoals(prev => prev.map(g => g.id === id ? { ...g, ...goalUpdate } : g));
     }
@@ -435,7 +428,7 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
     }
     if (fbUser && db) {
       const tRef = doc(db, "users", fbUser.uid, "tasks", id);
-      setDocumentNonBlocking(tRef, newTask, { merge: true });
+      setDocumentNonBlocking(tRef, sanitize(newTask), { merge: true });
     } else {
       setTasks(prev => [...prev, newTask]);
     }
@@ -444,7 +437,7 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
   const updateTask = (id: string, taskUpdate: Partial<Task>) => {
     if (fbUser && db) {
       const tRef = doc(db, "users", fbUser.uid, "tasks", id);
-      updateDocumentNonBlocking(tRef, { ...taskUpdate, updatedAt: new Date().toISOString() });
+      updateDocumentNonBlocking(tRef, sanitize({ ...taskUpdate, updatedAt: new Date().toISOString() }));
     } else {
       setTasks(prev => prev.map(t => t.id === id ? { ...t, ...taskUpdate } : t));
     }
@@ -490,7 +483,7 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
       updatedAt: new Date().toISOString()
     };
     if (fbUser && financeDocRef) {
-      setDocumentNonBlocking(financeDocRef, { ...finance, ...update, id: "current", userId: fbUser.uid }, { merge: true });
+      setDocumentNonBlocking(financeDocRef, sanitize({ ...finance, ...update, id: "current", userId: fbUser.uid }), { merge: true });
     } else {
       setFinance(prev => ({ ...prev, ...update }));
     }
@@ -529,7 +522,7 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
     }
     if (fbUser && db) {
       const rRef = doc(db, "users", fbUser.uid, "reviews", id);
-      setDocumentNonBlocking(rRef, newReview, { merge: true });
+      setDocumentNonBlocking(rRef, sanitize(newReview), { merge: true });
     } else {
       setReviews(prev => [...prev, newReview]);
     }
