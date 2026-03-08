@@ -227,7 +227,7 @@ export function AscendProvider({ children }: { children: React.ReactNode }) {
 
   const tasksQuery = useMemoFirebase(() => {
     if (!db || !fbUser) return null;
-    return collection(db, "users", fbUser.uid, "tasks");
+    return query(collection(db, "users", fbUser.uid, "tasks"), orderBy("createdAt", "desc"));
   }, [db, fbUser]);
 
   const financeDocRef = useMemoFirebase(() => {

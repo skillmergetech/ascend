@@ -12,7 +12,7 @@ import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
-import { useAscend, Task, PriorityType, SubTask } from "@/lib/store"
+import { useAscend, Task, PriorityType, SubTask, Goal } from "@/lib/store"
 import { 
   Plus, Trash2, CheckCircle2, Circle, Star, Trophy, Clock, 
   Sun, Moon, Filter, ListChecks, ArrowRight, LayoutGrid, 
@@ -21,6 +21,111 @@ import {
 import { useState, useMemo } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
+
+// Standardized date string YYYY-MM-DD
+const getTodayString = () => new Date().toLocaleDateString('en-CA')
+
+const PriorityBadge = ({ priority }: { priority: PriorityType }) => {
+  const styles = {
+    high: "text-red-500 bg-red-500/10",
+    medium: "text-orange-500 bg-orange-500/10",
+    low: "text-blue-500 bg-blue-500/10"
+  }
+  return (
+    <span className={cn("text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full", styles[priority])}>
+      {priority}
+    </span>
+  )
+}
+
+function TaskItem({ 
+  task, 
+  goals, 
+  onToggle, 
+  onEdit 
+}: { 
+  task: Task, 
+  goals: Goal[], 
+  onToggle: (id: string) => void, 
+  onEdit: (task: Task) => void 
+}) {
+  return (
+    <Card 
+      className={cn(
+        "border-none shadow-sm transition-all duration-300 group overflow-hidden relative",
+        task.completed ? "bg-muted/30 opacity-60" : "bg-card/40 backdrop-blur-md hover:shadow-xl hover:-translate-y-0.5"
+      )}
+    >
+      <div className={cn(
+        "absolute left-0 top-0 bottom-0 w-1 transition-colors",
+        task.priority === "high" ? "bg-red-500" : task.priority === "medium" ? "bg-orange-500" : "bg-blue-500"
+      )} />
+      <CardContent className="p-3 md:p-4 flex items-center justify-between gap-3 md:gap-4">
+        <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0">
+          <Button 
+            size="icon" 
+            variant="ghost" 
+            onClick={(e) => {
+              e.stopPropagation()
+              onToggle(task.id)
+            }}
+            className={cn(
+              "h-11 w-11 rounded-full border-2 transition-all flex-shrink-0",
+              task.completed ? "bg-accent border-accent text-white" : "border-muted-foreground/30 hover:border-primary"
+            )}
+          >
+            {task.completed ? <CheckCircle2 className="h-6 w-6" /> : <Circle className="h-6 w-6" />}
+          </Button>
+          
+          <div 
+            className="flex-1 min-w-0 cursor-pointer"
+            onClick={() => onEdit(task)}
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <PriorityBadge priority={task.priority} />
+              {(task.startTime || task.endTime) && (
+                <span className="text-[9px] md:text-[10px] font-bold text-accent flex items-center gap-1">
+                  <Clock className="h-3 w-3" /> {task.startTime || "--:--"} - {task.endTime || "--:--"}
+                </span>
+              )}
+              {task.timeEstimate && !task.startTime && !task.endTime && (
+                <span className="text-[9px] md:text-[10px] font-bold text-muted-foreground flex items-center gap-1">
+                  <Clock className="h-3 w-3" /> {task.timeEstimate}
+                </span>
+              )}
+            </div>
+            <p className={cn("font-bold text-sm md:text-base text-foreground truncate", task.completed && "line-through decoration-primary opacity-50")}>
+              {task.title}
+            </p>
+            <div className="flex flex-wrap items-center gap-2 md:gap-3 mt-1.5">
+              {task.goalId && (
+                <span className="text-[8px] md:text-[9px] font-black uppercase text-accent/80 flex items-center gap-1 truncate max-w-[120px]">
+                  <Zap className="h-2.5 w-2.5" /> {goals.find(g => g.id === task.goalId)?.title}
+                </span>
+              )}
+              {task.subtasks.length > 0 && (
+                <span className="text-[8px] md:text-[9px] font-bold text-muted-foreground flex items-center gap-1">
+                  <ListChecks className="h-2.5 w-2.5" /> {task.subtasks.filter(s => s.completed).length}/{task.subtasks.length}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-1 md:gap-2">
+           <Button 
+             variant="ghost" 
+             size="icon" 
+             className="h-10 w-10 text-muted-foreground hover:text-foreground md:opacity-0 group-hover:opacity-100 transition-opacity"
+             onClick={() => onEdit(task)}
+           >
+             <ArrowRight className="h-5 w-5" />
+           </Button>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
 
 export default function TasksPage() {
   const { tasks, goals, addTask, toggleTask, deleteTask, updateTask } = useAscend()
@@ -35,7 +140,7 @@ export default function TasksPage() {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false)
 
   const weeklyGoals = goals.filter(g => g.type === "weekly")
-  const today = new Date().toISOString().split('T')[0]
+  const today = getTodayString()
   
   const filteredTasks = useMemo(() => {
     let list = tasks.filter(t => t.date === today)
@@ -49,7 +154,15 @@ export default function TasksPage() {
   const completionRate = totalCount > 0 ? (completedCount / totalCount) * 100 : 0
 
   const handleAddTask = () => {
-    if (!newTitle.trim()) return
+    if (!newTitle.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Title Required",
+        description: "Please specify an objective for this mission."
+      })
+      return
+    }
+
     addTask({
       title: newTitle,
       date: today,
@@ -59,18 +172,17 @@ export default function TasksPage() {
       startTime: newStartTime,
       endTime: newEndTime
     })
+
     setNewTitle("")
     setNewPriority("medium")
     setNewStartTime("")
     setNewEndTime("")
+    setSelectedGoal("none")
+    
     toast({
-      title: "Task Logged",
-      description: `Priority ${newPriority} mission established.`,
+      title: "Mission Logged",
+      description: `Priority ${newPriority} mission established for ${today}.`,
     })
-  }
-
-  const handleToggle = (id: string) => {
-    toggleTask(id)
   }
 
   const handleUpdateSubtask = (taskId: string, subId: string, completed: boolean) => {
@@ -87,17 +199,9 @@ export default function TasksPage() {
     updateTask(taskId, { subtasks: [...task.subtasks, newSub] })
   }
 
-  const PriorityBadge = ({ priority }: { priority: PriorityType }) => {
-    const styles = {
-      high: "text-red-500 bg-red-500/10",
-      medium: "text-orange-500 bg-orange-500/10",
-      low: "text-blue-500 bg-blue-500/10"
-    }
-    return (
-      <span className={cn("text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full", styles[priority])}>
-        {priority}
-      </span>
-    )
+  const openTaskEdit = (task: Task) => {
+    setEditingTask(task)
+    setIsDetailsOpen(true)
   }
 
   return (
@@ -287,7 +391,13 @@ export default function TasksPage() {
                      </div>
                      <div className="grid grid-cols-1 gap-2.5">
                         {prioTasks.map(task => (
-                          <TaskItem key={task.id} task={task} />
+                          <TaskItem 
+                            key={task.id} 
+                            task={task} 
+                            goals={goals} 
+                            onToggle={toggleTask} 
+                            onEdit={openTaskEdit} 
+                          />
                         ))}
                         {prioTasks.length === 0 && (
                           <p className="text-xs italic text-muted-foreground/50 px-4 py-2">No active missions in this tier.</p>
@@ -301,15 +411,27 @@ export default function TasksPage() {
             <TabsContent value="goal" className="space-y-6">
               <div className="grid grid-cols-1 gap-2.5">
                 {filteredTasks.map(task => (
-                  <TaskItem key={task.id} task={task} />
+                  <TaskItem 
+                    key={task.id} 
+                    task={task} 
+                    goals={goals} 
+                    onToggle={toggleTask} 
+                    onEdit={openTaskEdit} 
+                  />
                 ))}
               </div>
             </TabsContent>
 
             <TabsContent value="time" className="space-y-6">
               <div className="grid grid-cols-1 gap-2.5">
-                {[...filteredTasks].sort((a, b) => (a.startTime || "").localeCompare(b.startTime || "")).map(task => (
-                  <TaskItem key={task.id} task={task} />
+                {[...filteredTasks].sort((a, b) => (a.startTime || "99:99").localeCompare(b.startTime || "99:99")).map(task => (
+                  <TaskItem 
+                    key={task.id} 
+                    task={task} 
+                    goals={goals} 
+                    onToggle={toggleTask} 
+                    onEdit={openTaskEdit} 
+                  />
                 ))}
               </div>
             </TabsContent>
@@ -462,89 +584,4 @@ export default function TasksPage() {
       </Dialog>
     </AppShell>
   )
-
-  function TaskItem({ task }: { task: Task }) {
-    return (
-      <Card 
-        className={cn(
-          "border-none shadow-sm transition-all duration-300 group overflow-hidden relative",
-          task.completed ? "bg-muted/30 opacity-60" : "bg-card/40 backdrop-blur-md hover:shadow-xl hover:-translate-y-0.5"
-        )}
-      >
-        <div className={cn(
-          "absolute left-0 top-0 bottom-0 w-1 transition-colors",
-          task.priority === "high" ? "bg-red-500" : task.priority === "medium" ? "bg-orange-500" : "bg-blue-500"
-        )} />
-        <CardContent className="p-3 md:p-4 flex items-center justify-between gap-3 md:gap-4">
-          <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0">
-            <Button 
-              size="icon" 
-              variant="ghost" 
-              onClick={(e) => {
-                e.stopPropagation()
-                handleToggle(task.id)
-              }}
-              className={cn(
-                "h-11 w-11 rounded-full border-2 transition-all flex-shrink-0",
-                task.completed ? "bg-accent border-accent text-white" : "border-muted-foreground/30 hover:border-primary"
-              )}
-            >
-              {task.completed ? <CheckCircle2 className="h-6 w-6" /> : <Circle className="h-6 w-6" />}
-            </Button>
-            
-            <div 
-              className="flex-1 min-w-0 cursor-pointer"
-              onClick={() => {
-                setEditingTask(task)
-                setIsDetailsOpen(true)
-              }}
-            >
-              <div className="flex items-center gap-2 mb-1">
-                <PriorityBadge priority={task.priority} />
-                {(task.startTime || task.endTime) && (
-                  <span className="text-[9px] md:text-[10px] font-bold text-accent flex items-center gap-1">
-                    <Clock className="h-3 w-3" /> {task.startTime || "--:--"} - {task.endTime || "--:--"}
-                  </span>
-                )}
-                {task.timeEstimate && !task.startTime && !task.endTime && (
-                  <span className="text-[9px] md:text-[10px] font-bold text-muted-foreground flex items-center gap-1">
-                    <Clock className="h-3 w-3" /> {task.timeEstimate}
-                  </span>
-                )}
-              </div>
-              <p className={cn("font-bold text-sm md:text-base text-foreground truncate", task.completed && "line-through decoration-primary opacity-50")}>
-                {task.title}
-              </p>
-              <div className="flex flex-wrap items-center gap-2 md:gap-3 mt-1.5">
-                {task.goalId && (
-                  <span className="text-[8px] md:text-[9px] font-black uppercase text-accent/80 flex items-center gap-1 truncate max-w-[120px]">
-                    <Zap className="h-2.5 w-2.5" /> {goals.find(g => g.id === task.goalId)?.title}
-                  </span>
-                )}
-                {task.subtasks.length > 0 && (
-                  <span className="text-[8px] md:text-[9px] font-bold text-muted-foreground flex items-center gap-1">
-                    <ListChecks className="h-2.5 w-2.5" /> {task.subtasks.filter(s => s.completed).length}/{task.subtasks.length}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-1 md:gap-2">
-             <Button 
-               variant="ghost" 
-               size="icon" 
-               className="h-10 w-10 text-muted-foreground hover:text-foreground md:opacity-0 group-hover:opacity-100 transition-opacity"
-               onClick={() => {
-                 setEditingTask(task)
-                 setIsDetailsOpen(true)
-               }}
-             >
-               <ArrowRight className="h-5 w-5" />
-             </Button>
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
 }
